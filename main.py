@@ -4,7 +4,7 @@ import time
 import plotly.graph_objects as go
 import numpy as np
 
-# ১. পেজ সেটিংস ও প্রিমিয়াম শিরোনাম (১০০% এরর-ফ্রি স্ট্যান্ডার্ড মেথড)
+# ১. পেজ সেটিংস ও প্রিমিয়াম শিরোনাম
 st.set_page_config(page_title="DiscreteMind AI Ultra Pro", page_icon="🧮", layout="centered")
 
 st.title("🚀 DiscreteMind AI Ultra Pro")
@@ -12,14 +12,14 @@ st.subheader("Advanced 3D-Enhanced Discrete Mathematics Lab Solver")
 st.write("Presidency University | CSE Dept | AI Innovation Project")
 st.write("---")
 
-# ২. সাইডবার ডিজাইন (স্টুডেন্ট ইনফো কার্ড - কোনো এপিআই কি বক্স নেই)
+# ২. সাইডবার ডিজাইন (স্টুডেন্ট INFO)
 st.sidebar.header("🎓 Lab Project Profile")
 with st.sidebar.container(border=True):
     st.write("**Developer:** MD FAZLE RABBI SOHAN")
     st.write("**Institution:** Presidency University")
     st.write("**Department:** CSE")
     st.write("**Course:** Discrete Mathematics")
-    st.caption("🔥 Status: Fully Automatic & Secured")
+    st.caption("🔥 Status: 100% Secured via Streamlit Secrets")
 
 st.sidebar.write("---")
 st.sidebar.header("🔗 Quick Navigation")
@@ -53,18 +53,11 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 st.write("---")
 
-# ৪. নতুন API Key ওবফাসকেশন (গিটহাবের ব্লক এড়ানোর জন্য ১০ টুকরোর মাস্টার ট্রিক)
-k1 = "AQ.Ab8RN"
-k2 = "6Ko1P8t"
-k3 = "e_3juST-"
-k4 = "foLCwoq"
-k5 = "APp6tOf"
-k6 = "O9nsyFD"
-k7 = "XA2VmBs"
-k8 = "aA"
-
-# রানটাইমে টুকরোগুলোকে জোড়া লাগিয়ে নতুন API Key তৈরি হবে
-NEW_AUTOMATIC_KEY = f"{k1}{k2}{k3}{k4}{k5}{k6}{k7}{k8}"
+# 🎯 ৪. স্ট্রিমলিট সিক্রেটস থেকে এপিআই কি রিড করা (কোড সম্পূর্ণ নিরাপদ)
+try:
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    GEMINI_API_KEY = None
 
 # ৫. ডিসক্রিট ম্যাথ টপিক সিলেকশন
 topic = st.selectbox(
@@ -76,7 +69,7 @@ topic = st.selectbox(
     ]
 )
 
-# ৬. スマート প্র্যাকটিস কুইক বাটনসমূহ
+# ৬. স্মার্ট প্র্যাকটিস কুইক বাটনসমূহ
 st.write("💡 **স্মার্ট প্র্যাকটিস টুলস (যেকোনো একটি বাটনে ক্লিক করো):**")
 col1, col2, col3 = st.columns(3)
 
@@ -117,9 +110,11 @@ with btn_col2:
         st.session_state.input_val = ""
         st.rerun()
 
-# 🧮 এআই ব্যাকএন্ড সলভিং লজিক (সম্পূর্ণ অটোমেটিক নতুন কী দিয়ে)
+# 🧮 এআই ব্যাকএন্ড সলভিং লজিক
 if solve_btn:
-    if not user_query:
+    if not GEMINI_API_KEY:
+        st.error("❌ Streamlit Cloud-এ GEMINI_API_KEY সেট করা হয়নি! দয়া করে App Settings থেকে Secrets কনফিগার করো।")
+    elif not user_query:
         st.warning("⚠️ আগে সলভ করার জন্য কোনো প্রশ্ন ইনপুট দাও বা উপরের উদাহরণ বাটনে ক্লিক করো!")
     else:
         progress_bar = st.progress(0)
@@ -132,8 +127,7 @@ if solve_btn:
             
         with st.spinner("✨ ফাইনাল সলিউশন ফরম্যাট করা হচ্ছে..."):
             try:
-                # নতুন জোড়া লাগানো কি দিয়ে কনফিগারেশন
-                genai.configure(api_key=NEW_AUTOMATIC_KEY)
+                genai.configure(api_key=GEMINI_API_KEY)
                 model = genai.GenerativeModel('gemini-1.5-flash')
                 
                 prompt = f"""
@@ -166,11 +160,11 @@ if solve_btn:
             except Exception as e:
                 status_text.empty()
                 progress_bar.empty()
-                st.error(f"❌ রান-টাইম এরর: {e}\n\nদয়া করে নিশ্চিত করো যে নতুন এপিআই কি-টি গুগল এআই স্টুডিওতে সচল আছে।")
+                st.error(f"❌ রান-টাইম এরর: {e}\n\nSecrets ড্যাশবোর্ডের এপিআই কি-টি সচল আছে কি না নিশ্চিত করো।")
 
 st.write("---")
 
-# 🧠 ৬. কালারফুল ইন্টারঅ্যাক্টিভ কুইজ মডিউল
+# 🧠 ৭. কালারফুল ইন্টারঅ্যাক্টিভ কুইজ মডিউল
 st.subheader("🧠 Interactive Lab Quiz (Self-Test)")
 st.info("❓ **প্রশ্ন:** If a set has 4 elements, how many elements are there in its Power Set?")
 
