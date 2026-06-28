@@ -8,25 +8,25 @@ import numpy as np
 st.set_page_config(page_title="DiscreteMind AI Ultra Pro", page_icon="🧮", layout="centered")
 
 st.title("🚀 DiscreteMind AI Ultra Pro")
-st.subheader("Advanced 3D-Enhanced Discrete Mathematics Lab Solver")
+st.subheader("Advanced 3D-Enhanced Discrete Mathematics Course Project")
 st.write("Presidency University | CSE Dept | AI Innovation Project")
 st.write("---")
 
-# ২. সাইডবার ডিজাইন
-st.sidebar.header("🎓 Lab Project Profile")
+# ২. সাইডবার ডিজাইন (Course Project Profile)
+st.sidebar.header("🎓 Course Project Profile")
 with st.sidebar.container(border=True):
     st.write("**Developer:** MD FAZLE RABBI SOHAN")
     st.write("**Institution:** Presidency University")
     st.write("**Department:** CSE")
     st.write("**Course:** Discrete Mathematics")
-    st.caption("🔥 Status: 100% Hybrid & Fixed Offline Engine")
+    st.caption("🔥 Status: 100% Hybrid & Analytics Active")
 
 st.sidebar.write("---")
 st.sidebar.header("🔗 Quick Navigation")
 st.sidebar.page_link("https://presidency.edu.bd/", label="Presidency University Portal", icon="🏫")
 
-# ৩. ৩ডি অ্যানিমেটেড মডেল সেকশন
-st.write("### 🌐 Live 3D AI Topology Node Mesh (Lab Presentation Mode)")
+# ৩. ৩ডি অ্যানিমেটেড মডেল সেকশন (Presentation Mode)
+st.write("### 🌐 Live 3D AI Topology Node Mesh (Presentation Mode)")
 st.caption("মাউস দিয়ে স্ক্রল করে ৩ডি মডেলটি জুম করো এবং ড্র্যাগ করে চারদিকে ঘুরিয়ে স্যারদের দেখাও:")
 
 n_nodes = 40
@@ -64,12 +64,12 @@ topic = st.selectbox(
     "🎯 সলভ করার জন্য ডিসক্রিট ম্যাথ টপিকটি সিলেক্ট করো:", 
     [
         "📊 Truth Table & Propositional Logic (লজিক টেবিল)", 
-        "⭕ Set Theory (ইউনিয়ন, ইন্টারсеকশন ও ভেন ডায়াগ্রাম)", 
+        "⭕ Set Theory (ইউনিয়ন, ইন্টারসেকশন ও ভেন ডায়াগ্রাম)", 
         "🔢 Permutation & Combination (বিন্যাস ও সমাবেশ)"
     ]
 )
 
-# ৬. スマート প্র্যাকটিস কুইক বাটনসমূহ
+# ৬. স্মার্ট প্র্যাকটিস কুইক বাটনসমূহ
 st.write("💡 **স্মার্ট প্র্যাকটিস টুলস (যেকোনো একটি বাটনে ক্লিক করো):**")
 col1, col2, col3 = st.columns(3)
 
@@ -110,7 +110,7 @@ with btn_col2:
         st.session_state.input_val = ""
         st.rerun()
 
-# 🧮 স্মার্ট হাইব্রিড ব্যাকএন্ড (ফিক্সড করা হয়েছে)
+# 🧮 স্মার্ট হাইব্রিড ব্যাকএন্ড (অফলাইন ব্যাকআপ ইঞ্জিন সহ)
 if solve_btn:
     if not user_query:
         st.warning("⚠️ আগে সলভ করার জন্য কোনো প্রশ্ন ইনপুট দাও!")
@@ -135,10 +135,8 @@ if solve_btn:
                 else:
                     raise Exception("No Key")
             except Exception:
-                # 🛠️ এপিআই কী ছাড়া অফলাইন ইঞ্জিন এখন সব প্রশ্ন ডিটেক্ট করতে পারবে
                 cleaned_query = user_query.lower()
                 
-                # কাস্টম প্র্যাকটিস কোয়েশ্চেন ডিটেকশন (তোমার স্ক্রিনশটের নির্দিষ্ট প্রশ্নটি)
                 if "ali studies" in cleaned_query or ("p→q" in cleaned_query and "evaluate" in cleaned_query):
                     output_text = """
 ### 📝 **Mathematical Analysis / Given Data**
@@ -177,7 +175,7 @@ $$\\text{Expression: } (P \\rightarrow Q) \\land \\neg Q$$
 We need to prove that the logical expression $[(P \\rightarrow Q) \\land \\neg Q] \\rightarrow \\neg P$ is a **Tautology** using a Truth Table.
 
 ### 🛠️ **Step-by-Step Derivation**
-1. Evaluate the conditional statement $P \\rightarrow Q$ (False only when $P$ is True and $Q$ is False).
+1. Evaluate the conditional statement $P \\rightarrow Q$.
 2. Apply the logical AND operator with $\\neg Q$.
 3. Evaluate the final implication pointing to $\\neg P$.
 
@@ -190,7 +188,7 @@ We need to prove that the logical expression $[(P \\rightarrow Q) \\land \\neg Q
 | F | F | T | T | T | T | **T** |
 
 ### 🎯 **Final Conclusion**
-> **SUCCESS:** Since all the final column values are **True (T)**, the expression is absolutely verified as a **Tautology**. (Modus Tollens Law Verified)
+> **SUCCESS:** Since all the final column values are **True (T)**, the expression is absolutely verified as a **Tautology**.
 """
                 elif "u =" in cleaned_query or "set theory" in topic.lower():
                     output_text = """
@@ -232,8 +230,8 @@ Given sets:
 
 st.write("---")
 
-# 🧠 কুইজ ইঞ্জিন সেকশন
-st.subheader("🧠 Dynamic Discrete Mathematics Quiz Lab")
+# 🧠 কুইজ ইঞ্জিন সেকশন (Course Project Assessment)
+st.subheader("🧠 Dynamic Discrete Mathematics Course Quiz")
 
 quiz_data = [
     {"topic": "Propositional Logic", "question": "১. প্রপোজিশনাল লজিকে (Propositional Logic) P ∧ Q কখন সত্য (True) হয়?", "options": ["A) শুধুমাত্র যখন P এবং Q দুটিই True", "B) যেকোনো একটি True হলে", "C) দুটিই False হলে"], "correct": 0},
@@ -271,10 +269,10 @@ if not st.session_state.quiz_complete:
             st.session_state.quiz_complete = True
             st.rerun()
 else:
-    st.success("🎉 অভিনন্দন! তুমি কুইজ টেস্ট কমপ্লিট করেছ। নিচে তোমার লাইভ অ্যানালিটিক্স দেওয়া হলো:")
+    st.success("🎉 অভিনন্দন! তুমি কোর্স কুইজ টেস্ট সফলভাবে সম্পন্ন করেছ। নিচে তোমার লাইভ অ্যানালিটিক্স দেওয়া হলো:")
     total_score = sum(st.session_state.topic_scores.values())
     with st.container(border=True):
-        st.markdown("### 📊 Comprehensive Performance Analytics Report")
+        st.markdown("### 📊 Course Project Performance Report")
         st.write(f"**টোটাল টেস্ট স্কোর:** `{total_score}` / `{total_questions}`")
         st.write("---")
         st.markdown("#### 🎯 Topic-wise Analytics & Feedback")
@@ -283,12 +281,12 @@ else:
             st.write(f"🔹 **{topic_name}:** `{score}/2` -> **{status_color}**")
             if score == 2: st.caption("💡 *ফিডব্যাক:* এই টপিকে তোমার বেসিক এবং গাণিতিক দক্ষতা চমৎকার! পরীক্ষার জন্য তুমি পুরোপুরি প্রস্তুত।")
             elif score == 1: st.caption("💡 *ফিডব্যাক:* তোমার কনসেপ্ট ঠিক আছে তবে ট্রুথ টেবিল বা ফর্মুলা প্রয়োগে আরেকটু প্র্যাকটিস দরকার।")
-            else: st.caption("💡 *ফিডব্যাক:* এই টপিকে বড় ধরনের ঘাটতি রয়েছে। ল্যাব ম্যানুয়াল রিভিশন দাও।")
+            else: st.caption("💡 *ফিডব্যাক:* এই টপিকে বড় ধরনের ঘাটতি রয়েছে। কোর্স লেকচার শিটগুলো আবার রিভিশন দাও।")
             st.write("")
         st.write("---")
-        if total_score == total_questions: st.info("🏅 **সার্টিফিকেট রিমার্ক:** পারফেক্ট স্কোর! ডিসক্রিট ম্যাথ এক্সপার্ট।")
-        elif total_score >= 3: st.info("👍 **সার্টিফিকেট রিমার্ক:** ভালো পারফরম্যান্স। ল্যাব ফাইনালে তোমার এ-প্লাস (A+) নিশ্চিত।")
-        else: st.warning("📚 **সার্টিফিকেট রিমার্ক:** তোমাকে আরেকটু পড়াশোনা করতে হবে।")
+        if total_score == total_questions: st.info("🏅 **সার্টিফিকেট রিমার্ক:** পারফেক্ট স্কোর! তুমি একজন ডিসক্রিট ম্যাথ এক্সপার্ট।")
+        elif total_score >= 3: st.info("👍 **সার্টিফিকেট রিমার্ক:** ভালো পারফরম্যান্স। ফাইনালে তোমার এ-প্লাস (A+) নিশ্চিত।")
+        else: st.warning("📚 **সার্টিফিকেট রিমার্ক:** কোর্স টপিকগুলো তোমাকে আরেকটু ভালো করে রিভিশন দিতে হবে।")
     if st.button("🔄 কুইজ টেস্ট আবার শুরু করো"):
         st.session_state.current_q = 0
         st.session_state.topic_scores = {"Propositional Logic": 0, "Set Theory": 0, "Permutation & Combination": 0}
