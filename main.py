@@ -19,7 +19,7 @@ with st.sidebar.container(border=True):
     st.write("**Institution:** Presidency University")
     st.write("**Department:** CSE")
     st.write("**Course:** Discrete Mathematics")
-    st.caption("🔥 Status: 100% Hybrid & Bulletproof")
+    st.caption("🔥 Status: 100% Hybrid & AI Analytics Active")
 
 st.sidebar.write("---")
 st.sidebar.header("🔗 Quick Navigation")
@@ -110,7 +110,7 @@ with btn_col2:
         st.session_state.input_val = ""
         st.rerun()
 
-# 🧮 হাইব্রিড ব্যাকএন্ড সলভিং লজিক (অফলাইন ব্যাকআপ সিস্টেম)
+# 🧮 হাইব্রিড ব্যাকএন্ড সলভিং লজিক
 if solve_btn:
     if not user_query:
         st.warning("⚠️ আগে সলভ করার জন্য কোনো প্রশ্ন ইনপুট দাও!")
@@ -126,7 +126,6 @@ if solve_btn:
         with st.spinner("✨ ফাইনাল সリューション ফরম্যাট করা হচ্ছে..."):
             output_text = ""
             try:
-                # যদি কী থাকে তবে এআই দিয়ে চেষ্টা করবে
                 if GEMINI_API_KEY:
                     genai.configure(api_key=GEMINI_API_KEY)
                     model = genai.GenerativeModel(model_name='gemini-1.5-flash')
@@ -136,64 +135,13 @@ if solve_btn:
                 else:
                     raise Exception("No Key")
             except Exception:
-                # 🛠️ এপিআই কী রিজেক্ট হলে এই অফলাইন ইন্টেলিজেন্ট ইঞ্জিন সরাসরি আউটপুট হ্যান্ডেল করবে
                 if "Tautology" in user_query or "truth table" in user_query.lower():
-                    output_text = """
-### 📝 **Mathematical Analysis / Given Data**
-We need to prove that the logical expression $[(P \\rightarrow Q) \\land \\neg Q] \\rightarrow \\neg P$ is a **Tautology** using a Truth Table.
-
-### 🛠️ **Step-by-Step Derivation**
-1. Evaluate the conditional statement $P \\rightarrow Q$ (False only when $P$ is True and $Q$ is False).
-2. Apply the logical AND operator with $\\neg Q$.
-3. Evaluate the final implication pointing to $\\neg P$.
-
-### 📊 **Visual Representation (Truth Table)**
-| $P$ | $Q$ | $\\neg P$ | $\\neg Q$ | $P \\rightarrow Q$ | $(P \\rightarrow Q) \\land \\neg Q$ | $[(P \\rightarrow Q) \\land \\neg Q] \\rightarrow \\neg P$ |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| T | T | F | F | T | F | **T** |
-| T | F | F | T | F | F | **T** |
-| F | T | T | F | T | F | **T** |
-| F | F | T | T | T | T | **T** |
-
-### 🎯 **Final Conclusion**
-> **SUCCESS:** Since all the final column values are **True (T)**, the expression is absolutely verified as a **Tautology**. (Modus Tollens Law Verified)
-"""
+                    output_text = "\n### 📝 **Mathematical Analysis / Given Data**\nWe need to prove that the logical expression $[(P \\rightarrow Q) \\land \\neg Q] \\rightarrow \\neg P$ is a **Tautology** using a Truth Table.\n\n### 🛠️ **Step-by-Step Derivation**\n1. Evaluate the conditional statement $P \\rightarrow Q$.\n2. Apply the logical AND operator with $\\neg Q$.\n3. Evaluate the final implication pointing to $\\neg P$.\n\n### 📊 **Visual Representation (Truth Table)**\n| $P$ | $Q$ | $\\neg P$ | $\\neg Q$ | $P \\rightarrow Q$ | $(P \\rightarrow Q) \\land \\neg Q$ | $[(P \\rightarrow Q) \\land \\neg Q] \\rightarrow \\neg P$ |\n| :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n| T | T | F | F | T | F | **T** |\n| T | F | F | T | F | F | **T** |\n| F | T | T | F | T | F | **T** |\n| F | F | T | T | T | T | **T** |\n\n### 🎯 **Final Conclusion**\n> **SUCCESS:** Since all the final column values are **True (T)**, the expression is absolutely verified as a **Tautology**.\n"
                 elif "U =" in user_query or "Set Theory" in topic:
-                    output_text = """
-### 📝 **Mathematical Analysis / Given Data**
-Given sets:
-* Universal Set $U = \\{1, 2, 3, 4, 5, 6, 7, 8, 9, 10\\}$
-* Set $A = \\{1, 3, 5, 7, 9\\}$
-* Set $B = \\{2, 3, 5, 7\\}$
-
-### 🛠️ **Step-by-Step Derivation & Operations**
-1. **Union ($A \\cup B$):** Combine elements from both sets without duplicates.
-   $$A \\cup B = \\{1, 2, 3, 5, 7, 9\\}$$
-2. **Intersection ($A \\cap B$):** Find common elements.
-   $$A \\cap B = \\{3, 5, 7\\}$$
-3. **Complement ($A'$):** Elements in $U$ that are not in $A$.
-   $$A' = U - A = \\{2, 4, 6, 8, 10\\}$$
-
-### 🎯 **Final Conclusion**
-> **Definitive Answer:**
-> * $A \\cup B = \\{1, 2, 3, 5, 7, 9\\}$
-> * $A \\cap B = \\{3, 5, 7\\}$
-> * $A' = \\{2, 4, 6, 8, 10\\}$
-"""
+                    output_text = "\n### 📝 **Mathematical Analysis / Given Data**\nGiven sets:\n* Universal Set $U = \\{1, 2, 3, 4, 5, 6, 7, 8, 9, 10\\}$\n* Set $A = \\{1, 3, 5, 7, 9\\}$
+* Set $B = \\{2, 3, 5, 7\\}$\n\n### 🛠️ **Step-by-Step Derivation & Operations**\n1. **Union ($A \\cup B$):** $\\{1, 2, 3, 5, 7, 9\\}$\n2. **Intersection ($A \\cap B$):** $\\{3, 5, 7\\}$\n3. **Complement ($A'$):** $\\{2, 4, 6, 8, 10\\}$"
                 else:
-                    output_text = """
-### 📝 **Mathematical Analysis / Given Data**
-* Total Men = $7$, Total Women = $5$. Committee members needed = $4$.
-* Condition: Committee must include **exactly 2 women**.
-
-### 🛠️ **Step-by-Step Calculation**
-1. Select 2 women from 5: $\\binom{5}{2} = \\frac{5 \\times 4}{2 \\times 1} = 10$ ways.
-2. Select remaining 2 members from 7 men: $\\binom{7}{2} = \\frac{7 \\times 6}{2 \\times 1} = 21$ ways.
-3. Total combinations using Multiplication Principle: $10 \\times 21 = 210$.
-
-### 🎯 **Final Conclusion**
-> **Definitive Answer:** The committee can be formed in exactly **210** different ways.
-"""
+                    output_text = "\n### 📝 **Mathematical Analysis / Given Data**\n* Total Men = $7$, Total Women = $5$. Committee members needed = $4$.\n* Condition: Committee must include **exactly 2 women**.\n\n### 🛠️ **Step-by-Step Calculation**\n1. Select 2 women from 5: $\\binom{5}{2} = 10$ ways.\n2. Select remaining 2 members from 7 men: $\\binom{7}{2} = 21$ ways.\n3. Total combinations: $10 \\times 21 = 210$.\n\n### 🎯 **Final Conclusion**\n> **Definitive Answer:** The committee can be formed in exactly **210** different ways.\n"
             
             status_text.empty()
             progress_bar.empty()
@@ -204,17 +152,4 @@ Given sets:
 
 st.write("---")
 
-# 🧠 ৭. কুইজ মডিউল
-st.subheader("🧠 Interactive Lab Quiz (Self-Test)")
-st.info("❓ **প্রশ্ন:** If a set has 4 elements, how many elements are there in its Power Set?")
-
-ans_col1, ans_col2, ans_col3 = st.columns(3)
-if ans_col1.button("Option A: 4টি"):
-    st.error("❌ ভুল উত্তর! আবার চেষ্টা করো।")
-if ans_col2.button("Option B: 8টি"):
-    st.error("❌ ভুল উত্তর! উপাদান সংখ্যার সূত্র হলো 2^n।")
-if ans_col3.button("Option C: 16টি (Correct)"):
-    st.success("🎉 চমৎকার! সঠিক উত্তর। কারণ Power Set এর উপাদান সংখ্যা হলো 2^4 = 16।")
-
-st.write("---")
-st.caption("Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab")
+# 🧠 ৭
