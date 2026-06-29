@@ -1,5 +1,4 @@
-
-import streamlit as st
+mport streamlit as st
 import requests
 import time
 import pandas as pd
@@ -78,18 +77,17 @@ ai_ready = False
 connection_error_msg = ""
 used_gateway = "v1 API Gateway"
 
-# জেমিনি REST API রিকোয়েস্ট ফাংশন (যা আপনার AQ কী দিয়ে সম্পূর্ণ ভেরিফাইড এবং কম্পাইল্ড)
+# জেমিনি REST API রিকোয়েস্ট ফাংশন (contents -> parts ডাবল ম্যাপিং ভেরিফাইড)
 def call_gemini_rest(prompt_text, api_key, route_index=1):
     if route_index == 1:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=){api_key}"
     elif route_index == 2:
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"[https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=){api_key}"
     else:
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={api_key}"
+        url = f"[https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=](https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=){api_key}"
 
     headers = {'Content-Type': 'application/json'}
     
-    # গুগলের নতুন এন্টারপ্রাইজ পেলোড ফরম্যাট অনুযায়ী contents এর সঠিক ডিকশনারি ম্যাপিং
     payload = {
         "contents": [
             {
@@ -106,7 +104,6 @@ def call_gemini_rest(prompt_text, api_key, route_index=1):
         response = requests.post(url, headers=headers, json=payload, timeout=15)
         if response.status_code == 200:
             res_json = response.json()
-            # সেফলি ডিকশনারি পার্সিং জেমিনি রেসপন্স স্ট্রাকচার
             return res_json['candidates'][0]['content']['parts'][0]['text'], True, route_index
         else:
             if route_index < 3:
@@ -131,12 +128,12 @@ if final_key:
 else:
     connection_error_msg = "No API Key detected in st.secrets or manual input field."
 
-# স্ট্যাটাস প্যানেল রেন্ডারিং (ভ্যালিডেটেড সিঙ্গেল স্ট্রিং ফরম্যাট)
+# স্ট্যাটাস প্যানেল রেন্ডারিং
 if ai_ready:
     status_msg = f"🟢 Core AI Engine: READY TO PERFORM ({used_gateway} Gateway Connected)"
     st.markdown(f'<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">{status_msg}</div>', unsafe_allow_html=True)
 else:
-    status_msg = f"🔴 Core AI Engine: NOT CONNECTED<br><span style='font-size:12px; font-weight:normal; color:#fda4af !important;'>Reason: {connection_error_msg}</span>"
+    status_msg = f"🔴 Core AI Engine: NOT CONNECTED<br><span style=\'font-size:12px; font-weight:normal; color:#fda4af !important;\'>Reason: {connection_error_msg}</span>"
     st.markdown(f'<div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">{status_msg}</div>', unsafe_allow_html=True)
 
 st.title("🧠 DiscreteMind AI: Universal Course Solver")
@@ -205,7 +202,7 @@ with st.sidebar.container(border=True):
         st.markdown("<span style='color: #f43f5e; font-weight: bold;'>🔥 Status: OFFLINE</span>", unsafe_allow_html=True)
 
 st.sidebar.write("---")
-st.sidebar.page_link("https://presidency.edu.bd/", label="Presidency University Portal", icon="🏫")
+st.sidebar.page_link("[https://presidency.edu.bd/](https://presidency.edu.bd/)", label="Presidency University Portal", icon="🏫")
 
 # ৪. ইউনিভার্সাল সিঙ্গেল ইনপুট ইন্টারফেস
 st.markdown("<h3 style='color: #38bdf8;'>🚀 Universal Math Input Box</h3>", unsafe_allow_html=True)
@@ -348,7 +345,7 @@ elif st.session_state.exam_submitted:
         grade, color, bg_card = "F (Fail)", "#f43f5e", "rgba(244, 63, 94, 0.1)"
         feedback = f"Unsatisfactory score. You need to rebuild your foundational understanding of {exam_level} level concepts. Use the Universal Math Solver to practice more."
 
-    # কোটেশন কনф্লিক্ট দূর করতে পিওর সেফ চেইনিং অবজেক্ট ফরম্যাট
+    # পিওর সিঙ্গেল-লাইন অবজেক্ট রেন্ডারিং
     report_html = '<div style="background:' + bg_card + '; border:1px solid ' + color + '; padding:20px; border-radius:8px; margin-bottom:25px;">'
     report_html += '<h3 style="color:' + color + '; margin-top:0; font-weight:600;">📊 Comprehensive Exam Report Card</h3>'
     report_html += '<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>'
@@ -371,5 +368,3 @@ elif st.session_state.exam_submitted:
 
 st.write("---")
 st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
-
-```
