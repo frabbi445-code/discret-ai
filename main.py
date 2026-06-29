@@ -114,16 +114,17 @@ def call_universal_ai(prompt_text, api_key, provider_name):
         except Exception as e: return str(e), False
 
     elif provider_name == "Gemini":
-        # ট্রাই ১: নতুন AQ কী-র জন্য ইউনিভার্সাল v1 এবং gemini-2.5-flash মডেল ট্রাই করা
+        # গেটওয়ে লিস্ট আপডেট করা হয়েছে (v1beta সাধারণত সবচেয়ে বেশি স্টেবল ফ্রির জন্য)
         gateways = [
-            "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent",
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
         ]
         
         last_error = ""
         for url_template in gateways:
             url = f"{url_template}?key={api_key}"
             headers = {'Content-Type': 'application/json'}
+            # সঠিক প্যালয়োড স্ট্রাকচার নিশ্চিত করা হয়েছে
             payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
             try:
                 res = requests.post(url, headers=headers, json=payload, timeout=12)
@@ -134,11 +135,7 @@ def call_universal_ai(prompt_text, api_key, provider_name):
             except Exception as e:
                 last_error = str(e)
         
-        # যদি সব গেটওয়েই ফেল করে (যেমন 404), তবে বুঝতে হবে API Key টিতে Gemini এনাবলড নেই
-        if "404" in last_error or "NOT_FOUND" in last_error:
-            return "Gemini Error 404: Your API Key is valid, but 'Generative Language API' service is not enabled or allowed on this Cloud Key. Please generate a fresh key from Google AI Studio (aistudio.google.com).", False
-            
-        return last_error, False
+        return f"Gemini API Error -> {last_error}", False
 
     elif provider_name == "Claude":
         url = "https://api.anthropic.com/v1/messages"
@@ -289,28 +286,4 @@ if not st.session_state.exam_submitted:
     with st.form("dynamic_exam_form"):
         st.info(f"⏱️ Exam Regulations: Answer all 5 [{exam_level}] level questions.")
         for q in st.session_state.ai_questions:
-            st.markdown(f"#### **Question {q['id']}: {q['question']}**")
-            if q['type'] == "MCQ":
-                st.session_state.user_answers[q['id']] = st.radio("Select answer:", q['options'], key=f"ai_q_{q['id']}")
-            else:
-                st.session_state.user_answers[q['id']] = st.text_input("Type numerical answer:", key=f"ai_q_{q['id']}").strip()
-            st.write("---")
-        if st.form_submit_button("📤 Submit Mock Test"):
-            st.session_state.exam_submitted = True
-            st.rerun()
-elif st.session_state.exam_submitted:
-    st.success("🎯 Evaluation Completed!")
-    score = sum(1 for q in st.session_state.ai_questions if str(st.session_state.user_answers.get(q['id'], '')).lower() == str(q['correct']).lower())
-    wrong = len(st.session_state.ai_questions) - score
-    
-    fig = go.Figure(data=[go.Pie(labels=['Correct', 'Incorrect'], values=[score, wrong], hole=.4, marker_colors=['#4ade80', '#f43f5e'])])
-    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=250)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    if st.button("🔄 Take Another AI Test"):
-        st.session_state.exam_submitted = False
-        st.session_state.ai_questions = None
-        st.rerun()
-
-st.write("---")
-st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
+            st.markdown(f"#### **Question {q['id']}:
