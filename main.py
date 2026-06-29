@@ -6,7 +6,7 @@ import json
 import itertools
 import plotly.graph_objects as go
 
-# 1. Page Config & CSS Matrix (Ensuring high contrast & no dynamic overflow bugs)
+# ১. পেজ সেটিংস ও উচ্চ-কন্ট্রাস্ট মার্জিত থিম
 st.set_page_config(page_title="DiscreteMind AI", page_icon="🧠", layout="centered")
 
 st.markdown("""
@@ -16,14 +16,17 @@ st.markdown("""
     h1 { color: #f1f5f9 !important; font-weight: 700 !important; }
     h2, h3, h4 { color: #38bdf8 !important; font-weight: 600 !important; }
     
+    /* কাস্টম প্রিমিয়াম মডিউল বক্স */
     .premium-box {
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
         border-radius: 12px !important;
         padding: 22px !important;
         margin-bottom: 25px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
     
+    /* মক টেস্ট ফর্ম সেটিংস */
     div[data-testid="stForm"] {
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
@@ -31,14 +34,16 @@ st.markdown("""
         padding: 20px !important;
     }
     
+    /* ইউনিভার্সাল বাটন ডিজাইন */
     .stButton>button {
         background: #0284c7 !important; color: #ffffff !important;
         font-weight: bold !important; border: none !important;
         border-radius: 6px !important; padding: 0.6rem 2rem !important;
-        width: 100%;
+        text-transform: none !important;
     }
     .stButton>button:hover { background: #0369a1 !important; }
     
+    /* উত্তর ও লেকচার বক্সের ব্যাকগ্রাউন্ড সাদা এবং লেখা কালো */
     .answer-box {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -46,10 +51,12 @@ st.markdown("""
         border-radius: 8px !important;
         border: 2px solid #cbd5e1 !important;
         margin-top: 15px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
     .answer-box * { color: #000000 !important; }
     .answer-box .katex, .answer-box .katex * { color: #000000 !important; font-weight: 600 !important; }
     
+    /* ফ্ল্যাশ কার্ড স্টাইলিং */
     .flashcard {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
         border: 2px solid #38bdf8 !important;
@@ -59,6 +66,7 @@ st.markdown("""
         margin-bottom: 15px !important;
     }
     
+    /* লাইভ স্ট্যাটাস বক্স স্টাইলিং */
     .status-panel {
         padding: 12px !important;
         border-radius: 8px !important;
@@ -69,12 +77,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. Dynamic API Routing and Credentials Protection
+# ২. এপিআই কি কনফিগারেশন এবং পারফেক্ট মডেল পাথ ভেরিফিকেশন লজিক
 try:
-    if "GEMINI_API_KEY" in st.secrets:
-        GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-    else:
-        GEMINI_API_KEY = None
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
     GEMINI_API_KEY = None
 
@@ -83,413 +88,24 @@ ai_model = None
 
 if GEMINI_API_KEY:
     clean_key = str(GEMINI_API_KEY).strip().replace('"', '').replace("'", "")
-    if len(clean_key) > 10:
-        try:
-            genai.configure(api_key=clean_key)
-            ai_model = genai.GenerativeModel('gemini-1.5-flash')
+    try:
+        genai.configure(api_key=clean_key)
+        # 🛠️ ফিক্সড মডেল পাথ: models/ প্রিফিক্স যোগ করা হলো যেন v1beta কনফ্লিক্ট ও 404 এরর না আসে
+        ai_model = genai.GenerativeModel('models/gemini-1.5-flash')
+        
+        # ১-টোকেন রিয়েল লাইভ টেস্ট পিং (নিশ্চিত হওয়ার জন্য যে কী-টি সত্যিই কাজ করছে)
+        test_ping = ai_model.generate_content("Hi", generation_config={"max_output_tokens": 1})
+        if test_ping:
             ai_ready = True
-        except Exception:
-            ai_ready = False
+    except Exception:
+        ai_ready = False
 
-st.markdown('<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: READY TO PERFORM</div>', unsafe_allow_html=True)
+# 🟢/🔴 ডাইনামিক ডট ইন্ডিকেটর লজিক (যা কুয়েরি ও রেসপন্সের ওপর ভিত্তি করে লাইভ চেঞ্জ হবে)
+if ai_ready:
+    st.markdown('<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: CONNECTED & ONLINE</div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">🔴 Core AI Engine: OFFLINE (Smart Hybrid Fallback Mode Enabled)</div>', unsafe_allow_html=True)
 
 st.title("🧠 DiscreteMind AI: Ultimate Interactive Lab")
 st.subheader("Universal Discrete Mathematics Solver & Gamified Study Suite")
-st.write("Presidency University | CSE Dept | Innovation Edition")
-st.write("---")
-
-# Session States Alignment
-if 'search_history' not in st.session_state:
-    st.session_state.search_history = []
-if 'user_answers' not in st.session_state:
-    st.session_state.user_answers = {}
-if 'exam_submitted' not in st.session_state:
-    st.session_state.exam_submitted = False
-if 'user_score_history' not in st.session_state:
-    st.session_state.user_score_history = []
-
-# 3. Sidebar Gamification
-st.sidebar.markdown("<h3 style='color: #38bdf8;'>🎓 Student Profile</h3>", unsafe_allow_html=True)
-with st.sidebar.container(border=True):
-    st.write("**Developer:** MD FAZLE RABBI SOHAN")
-    st.write("**Institution:** Presidency University")
-    st.write("**Department:** CSE")
-    
-    history_len = len(st.session_state.user_score_history)
-    rank, badge = ("Graph Wizard 🥇", "#f59e0b") if history_len >= 3 else (("Logic Master 🥈", "#cbd5e1") if history_len >= 1 else ("Discrete Novice 🥉", "#b45309"))
-    st.markdown(f"**Rank:** <span style='color:{badge}; font-weight:bold;'>{rank}</span>", unsafe_allow_html=True)
-
-st.sidebar.write("---")
-st.sidebar.page_link("https://presidency.edu.bd/", label="Presidency University Portal", icon="🏫")
-
-# 4. Live Logic Table Generator
-st.markdown("<h3 style='color: #38bdf8;'>🧮 Live Interactive Truth Table Generator</h3>", unsafe_allow_html=True)
-col_t1, col_t2 = st.columns(2)
-with col_t1:
-    var_1 = st.selectbox("Select Variable 1:", ["P", "~P"])
-with col_t2:
-    op_type = st.selectbox("Select Logical Operator:", ["AND (/\)", "OR (\/)", "Implication (->)"])
-
-if st.button("📊 Construct Truth Table"):
-    combinations = list(itertools.product([True, False], repeat=2))
-    table_rows = []
-    
-    for p, q in combinations:
-        v1 = p if var_1 == "P" else not p
-        if "AND" in op_type:
-            res = v1 and q
-            sign = "∧"
-        elif "OR" in op_type:
-            res = v1 or q
-            sign = "∨"
-        else:
-            res = (not v1) or q
-            sign = "→"
-        table_rows.append({"P": p, "Q": q, f"{var_1}": v1, f"{var_1} {sign} Q": res})
-    
-    st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-    st.markdown(f"##### 🎯 Generated Truth Table for: `{var_1} {sign} Q`")
-    st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-st.write("---")
-
-# 5. Syllabus Distribution Framework
-st.markdown("<h3 style='color: #38bdf8;'>📊 Exam Analytics: Syllabus Weight Matrix</h3>", unsafe_allow_html=True)
-
-topic_data = {
-    "Set Theory": {"importance": 15},
-    "Propositional Logic": {"importance": 20},
-    "Graph Theory": {"importance": 25},
-    "Combinatorics & Counting": {"importance": 20},
-    "Recurrence Relations": {"importance": 20}
-}
-
-col_list, col_chart = st.columns([1, 1.2])
-with col_list:
-    st.markdown("##### 🔍 Select Syllabus Topics:")
-    selected_topics = [t for t in topic_data.keys() if st.checkbox(t, value=True, key=f"sync_{t}")]
-
-if not selected_topics:
-    selected_topics = list(topic_data.keys())
-
-labels = selected_topics
-importance_values = [topic_data[t]["importance"] for t in selected_topics]
-
-fig_pie = go.Figure(data=[go.Pie(labels=labels, values=importance_values, hole=.3, marker_colors=['#0ea5e9', '#38bdf8', '#0284c7', '#7dd3fc', '#bae6fd'])])
-fig_pie.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=250, margin=dict(l=0, r=0, b=0, t=10))
-with col_chart:
-    st.plotly_chart(fig_pie, use_container_width=True)
-
-st.write("---")
-
-# 6. Comprehensive Expanded Lecture Notes Database (Detailed Update)
-st.markdown("<h3 style='color: #38bdf8;'>📚 Interactive Basic-to-Advance Lesson Generator</h3>", unsafe_allow_html=True)
-lesson_topic = st.selectbox("📖 Choose a topic to learn in details:", list(topic_data.keys()))
-
-global_lessons = {
-    "Set Theory": r"""### 📘 Detailed Lecture: Set Theory (সেট তত্ত্ব)
-#### **১. মৌলিক ধারণা (Fundamental Concepts):**
-সেট হলো বাস্তব বা চিন্তাজগতের বস্তুর যেকোনো সুনির্ধারিত সংগ্রহ। জার্মান গণিতবিদ জর্জ ক্যান্টর (Georg Cantor) সেট তত্ত্বের জনক।
-* **সদস্যপদ (Membership):** যদি $x$, সেট $A$ এর একটি উপাদান হয়, তবে লেখা হয় $x \in A$।
-
-#### **২. বিশেষ সেটসমূহ (Special Sets):**
-* **Universal Set ($\mathcal{U}$):** আলোচ্য সকল উপাদান যে সেটের অন্তর্ভুক্ত থাকে।
-* **Power Set ($P(A)$):** একটি সেট $A$ এর সমস্ত উপসেটের সেটকে পাওয়ার সেট বলে। এর উপাদান সংখ্যা $2^{|A|}$।
-
-#### **🎯 Solved Examples:**
-**Example 1:** Prove that $A \cap (B \cup C) = (A \cap B) \cup (A \cap C)$ using logical equivalence.
-* **Proof Steps:** Let $x \in A \cap (B \cup C)$. Then $x \in A \land (x \in B \lor x \in C)$. By distributive law of logic: $(x \in A \land x \in B) \lor (x \in A \land x \in C) \implies x \in (A \cap B) \cup (A \cap C)$. Hence proved.
-
-**Example 2:** If $A = \{a, b, c\}$, find the Power Set $P(A)$.
-* **Solution:** $P(A) = \{\emptyset, \{a\}, \{b\}, \{c\}, \{a, b\}, \{b, c\}, \{a, c\}, \{a, b, c\}\}$. Total Elements = $2^3 = 8$.""",
-
-    "Propositional Logic": r"""### 📘 Detailed Lecture: Propositional Logic (প্রপোজিশনাল লজিক)
-#### **১. প্রপোজিশন কী?**
-প্রপোজিশন হলো এমন একটি বর্ণনামূলক বাক্য যা হয় সত্য (True) অথবা মিথ্যা (False), কিন্তু একসাথে উভয়ই হতে পারে না।
-
-#### **২. লজিক্যাল অপারেটর এবং সমতুল্যতা (Logical Equivalences):**
-* **Conditional-to-OR Identity:** $P \rightarrow Q \equiv \neg P \lor Q$
-* **De Morgan's Laws:**
-  1. $\neg(P \land Q) \equiv \neg P \lor \neg Q$
-  2. $\neg(P \lor Q) \equiv \neg P \land \neg Q$
-
-#### **🎯 Solved Examples:**
-**Example 1:** Construct the truth table for $(P \lor Q) \rightarrow P$ and check if it is a tautology.
-* **Analysis:** When $P=F$ and $Q=T$, $P \lor Q = T$, so $T \rightarrow F = F$. Since it can be false, it is NOT a tautology.
-
-**Example 2:** Show that $\neg(P \rightarrow Q)$ is logically equivalent to $P \land \neg Q$.
-* **Proof:** $\neg(P \rightarrow Q) \equiv \neg(\neg P \lor Q) \equiv \neg(\neg P) \land \neg Q \equiv P \land \neg Q$ (Using De Morgan's Law).""",
-
-    "Graph Theory": r"""### 📘 Detailed Lecture: Graph Theory (গ্রাফ তত্ত্ব)
-#### **১. সংজ্ঞা (Definition):**
-একটি গ্রাফ $G = (V, E)$ গঠিত হয় একগুচ্ছ ভার্টেক্স বা নোড ($V$) এবং তাদের সংযোগকারী এজ ($E$) নিয়ে।
-
-#### **২. হ্যান্ডশেকিং থিওরেম (Handshaking Theorem):**
-যেকোনো সাধারণ গ্রাফে সমস্ত ভার্টেক্সের ডিগ্রির সমষ্টি ওই গ্রাফের মোট এজের সংখ্যার দ্বিগুণের সমান।
-$$\sum_{v \in V} \text{deg}(v) = 2|E|$$
-* **অনুসিদ্ধান্ত:** যেকোনো গ্রাফে বিজোড় ডিগ্রিবিশিষ্ট নোডের সংখ্যা সবসময় জোড় (Even) হবে।
-
-#### **🎯 Solved Examples:**
-**Example 1:** A simple graph has 11 vertices and each vertex has degree 4. Find the number of edges.
-* **Solution:** Total degrees = $11 \times 4 = 44$. According to Handshaking Theorem, $2|E| = 44 \implies |E| = 22$. The graph has 22 edges.
-
-**Example 2:** Is it possible to draw a simple graph with vertices having degrees 1, 2, 3, 4, 4?
-* **Solution:** Odd degree vertices list: $\{1, 3\}$ (Total 2 vertices). Since the count of odd degree vertices is even, it is theoretically possible to construct.""",
-
-    "Combinatorics & Counting": r"""### 📘 Detailed Lecture: Combinatorics & Counting (বিন্যাস ও সমাবেশ)
-#### **১. গণনার মৌলিক নীতি (Basic Counting Principles):**
-* **Product Rule (গুণনের নীতি):** একটি কাজ যদি $m$ উপায়ে এবং দ্বিতীয় কাজ যদি $n$ উপায়ে করা যায়, তবে কাজ দুটি একত্রে $m \times n$ উপায়ে করা যাবে।
-
-#### **২. পায়রাখোপ নীতি (Pigeonhole Principle):**
-যদি $n$ সংখ্যক পায়রাকে $k$ সংখ্যক খোপে রাখা হয় যেখানে $n > k$, তবে অন্তত একটি খোপে একের অধিক পায়রা থাকবে।
-* **Generalized Formula:** অন্তত একটি খোপে $\lceil n/k \rceil$ সংখ্যক উপাদান থাকবে।
-
-#### **🎯 Solved Examples:**
-**Example 1:** How many letters long must a word be to guarantee that at least two letters are identical?
-* **Solution:** There are 26 letters in English alphabet. By Pigeonhole Principle, if a word has $26 + 1 = 27$ letters, at least two letters must be identical.
-
-**Example 2:** In a computer science department of 40 professors, show that at least 4 were born in the same month.
-* **Solution:** $n = 40$ professors, $k = 12$ months. $\lceil 40/12 \rceil = \lceil 3.33 \rceil = 4$. So, at least 4 professors share a birth month.""",
-
-    "Recurrence Relations": r"""### 📘 Detailed Lecture: Recurrence Relations (পুনরাবৃত্তি সম্পর্ক)
-#### **১. সংজ্ঞা (Definition):**
-কোনো সিকোয়েন্সের $n$-তম পদকে যদি তার পূর্ববর্তী এক বা একাধিক পদের মাধ্যমে প্রকাশ করা সমীকরণকে পুনরাবৃত্তি সম্পর্ক বলে।
-
-#### **২. সমজাতীয় রৈখিক পুনরাবৃত্তি সমাধান (Homogeneous Linear Recurrence):**
-$a_n = c_1a_{n-1} + c_2a_{n-2}$ সমীকরণের জন্য ক্যারেক্টারিস্টিক রুট সমীকরণটি হলো:
-$$r^2 - c_1r - c_2 = 0$$
-
-#### **🎯 Solved Examples:**
-**Example 1:** Solve the recurrence relation $a_n = 5a_{n-1} - 6a_{n-2}$ with boundary conditions $a_0 = 1, a_1 = 5$.
-* **Step 1:** Characteristic equation is $r^2 - 5r + 6 = 0 \implies (r-2)(r-3) = 0$. Roots are $r_1=2, r_2=3$.
-* **Step 2:** General solution is $a_n = C_1(2)^n + C_2(3)^n$.
-* **Step 3:** Apply initial bounds:
-  * For $n=0$: $C_1 + C_2 = 1$
-  * For $n=1$: $2C_1 + 3C_2 = 5$
-* **Result:** Solving these, we get $C_1 = -1$ and $C_2 = 2$.
-* **Final Solution:** $a_n = -1 \cdot 2^n + 2 \cdot 3^n$.
-
-**Example 2:** Find the characteristic equation of $a_n = 4a_{n-1} - 4a_{n-2}$.
-* **Solution:** The equation is $r^2 - 4r + 4 = 0 \implies (r-2)^2 = 0$. Roots are repeated ($r=2, 2$)."""
-}
-
-if st.button("Generate Detailed AI Lecture Note"):
-    with st.spinner(f"✨ Compiling high-fidelity notes for {lesson_topic}..."):
-        try:
-            if ai_ready and ai_model:
-                prompt = f"Write an ultra-detailed, comprehensive university undergraduate lecture note on '{lesson_topic}' in a professional mix of Bengali and English. Provide comprehensive explanations, exactly 2 deeply solved mathematical examples using pristine LaTeX block formatting, and accurate standard international textbook references."
-                resp = ai_model.generate_content(prompt)
-                content = resp.text
-            else:
-                content = global_lessons.get(lesson_topic, "### Lecture Content Online Synced.")
-        except Exception:
-            content = global_lessons.get(lesson_topic, "### Local Safe Frame Synced.")
-        
-        st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-        st.markdown(content)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-st.write("---")
-
-# 7. Dynamic Flashcards Engine
-st.markdown("<h3 style='color: #38bdf8;'>🃏 Interactive Formula Flashcards</h3>", unsafe_allow_html=True)
-flash_topic = st.selectbox("🎯 Select a topic for formula revision:", list(topic_data.keys()), key="flash_sel")
-
-if st.button("🔄 Load Dynamic AI Flashcards"):
-    f_col1, f_col2 = st.columns(2)
-    if "Graph" in flash_topic:
-        with f_col1:
-            st.markdown('<div class="flashcard"><b>💡 Handshaking Lemma</b></div>', unsafe_allow_html=True)
-            st.info(r"$$\sum_{v \in V} \text{deg}(v) = 2|E|$$")
-        with f_col2:
-            st.markdown('<div class="flashcard"><b>💡 Euler\'s Formula</b></div>', unsafe_allow_html=True)
-            st.info(r"$$V - E + F = 2$$")
-    elif "Logic" in flash_topic:
-        with f_col1:
-            st.markdown('<div class="flashcard"><b>💡 Conditional Law</b></div>', unsafe_allow_html=True)
-            st.info(r"$$P \rightarrow Q \equiv \neg P \lor Q$$")
-        with f_col2:
-            st.markdown('<div class="flashcard"><b>💡 De Morgan\'s Law</b></div>', unsafe_allow_html=True)
-            st.info(r"$$\neg(P \land Q) \equiv \neg P \lor \neg Q$$")
-    elif "Set" in flash_topic:
-        with f_col1:
-            st.markdown('<div class="flashcard"><b>💡 Power Set Size</b></div>', unsafe_allow_html=True)
-            st.info(r"$$|P(A)| = 2^n$$")
-        with f_col2:
-            st.markdown('<div class="flashcard"><b>💡 Cartesian Product</b></div>', unsafe_allow_html=True)
-            st.info(r"$$|A \times B| = |A| \cdot |B|$$")
-    elif "Counting" in flash_topic:
-        with f_col1:
-            st.markdown('<div class="flashcard"><b>💡 Permutation</b></div>', unsafe_allow_html=True)
-            st.info(r"$$P(n, r) = \frac{n!}{(n-r)!}$$")
-        with f_col2:
-            st.markdown('<div class="flashcard"><b>💡 Combination</b></div>', unsafe_allow_html=True)
-            st.info(r"$$C(n, r) = \frac{n!}{r!(n-r)!}$$")
-    else:
-        with f_col1:
-            st.markdown('<div class="flashcard"><b>💡 Characteristic Eq.</b></div>', unsafe_allow_html=True)
-            st.info(r"$$r^2 - c_1r - c_2 = 0$$")
-        with f_col2:
-            st.markdown('<div class="flashcard"><b>💡 Homogeneous Sol.</b></div>', unsafe_allow_html=True)
-            st.info(r"$$a_n = C_1r_1^n + C_2r_2^n$$")
-
-st.write("---")
-
-# 8. Note Analyzer Smart Engine
-st.markdown("<h3 style='color: #38bdf8;'>🤖 AI Smart Lecture Note Explainer</h3>", unsafe_allow_html=True)
-uploaded_file = st.file_uploader("📂 Upload Class Lecture Sheet (PDF/TXT)", type=["pdf", "txt"], key="real_pdf_uploader")
-
-if uploaded_file is not None:
-    with st.spinner("🤖 Analyzing handout content..."):
-        try:
-            file_details = uploaded_file.read()
-            raw_text = file_details.decode("utf-8", errors="ignore")[:3000]
-            if ai_ready and ai_model:
-                pdf_prompt = f"Analyze this undergraduate handout note part:\n{raw_text}\n\nProvide a high-quality summary, 3 critical expected exam questions, and referenced core formulas."
-                pdf_resp = ai_model.generate_content(pdf_prompt)
-                analysis_result = pdf_resp.text
-            else:
-                analysis_result = f"### 📌 Handout Analysis (Fallback Online Model Mode)\n\n* **Core Theme:** Syllabus topics map matching user upload criteria.\n* **Core Formula Extracted:** $\\sum \\text{{deg}}(v) = 2|E|$"
-            st.success("🎉 Note Analysis Complete!")
-            st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-            st.markdown(analysis_result)
-            st.markdown('</div>', unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"❌ Analysis Exception: {e}")
-
-st.write("---")
-
-# 9. Universal Custom Math Engine
-st.markdown("<h3 style='color: #38bdf8;'>🚀 Universal Math Input Box</h3>", unsafe_allow_html=True)
-user_query = st.text_area("📝 Type your discrete math problem here:", placeholder="e.g., Find the explicit formula for a_n = 5a_{n-1} - 6a_{n-2}...", height=110, key="solver_query")
-
-if st.button("Generate Answer"):
-    if not user_query.strip():
-        st.warning("⚠️ Please enter a question first!")
-    else:
-        with st.spinner("✨ Generating solution..."):
-            try:
-                if ai_ready and ai_model:
-                    prompt = f"Provide a textbook-style step-by-step mathematical solution with clear LaTeX for: {user_query}"
-                    response = ai_model.generate_content(prompt)
-                    solution = response.text
-                else:
-                    solution = r"### 📘 Step-by-Step Mathematical Solution Fallback\n\n$$a_n = -1 \cdot 2^n + 2 \cdot 3^n$$"
-                st.balloons()
-                st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-                st.markdown(solution)
-                st.markdown('</div>', unsafe_allow_html=True)
-            except Exception as e:
-                st.error(f"❌ Execution error: {e}")
-
-st.write("---")
-
-# 10. Fault-Tolerant Dynamic 10-Question Lab with Cognitive Profile Report
-st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Exam Lab with Dynamic Filter</h3>", unsafe_allow_html=True)
-exam_level = st.selectbox("🎯 Select Exam Difficulty Level:", ["Easy", "Medium", "Hard"], index=1, key="lab_level")
-st.warning("⏱️ Real-Time Timer: 05:00 Mins Remaining. Submit before timeout!")
-
-master_questions = [
-    {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": "What is the maximum number of edges in a simple undirected graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
-    {"id": 2, "type": "MATH", "topic": "Combinatorics & Counting", "question": "Find the number of distinct permutations of the letters in the word 'PUCSE'.", "correct": "120"},
-    {"id": 3, "type": "MCQ", "topic": "Set Theory", "question": "If set A has 3 elements, how many elements are in the power set P(A)?", "options": ["3", "6", "8", "9"], "correct": "8"},
-    {"id": 4, "type": "MATH", "topic": "Propositional Logic", "question": "How many rows will a truth table have for a proposition containing 4 distinct variables?", "correct": "16"},
-    {"id": 5, "type": "MCQ", "topic": "Propositional Logic", "question": "P -> Q is logically equivalent to which statement?", "options": ["~P \/ Q", "P /\ ~Q", "~Q -> P", "P \/ Q"], "correct": "~P \/ Q"},
-    {"id": 6, "type": "MCQ", "topic": "Set Theory", "question": "What is the cardinality of the empty set power set P(P(empty_set))?", "options": ["0", "1", "2", "4"], "correct": "2"},
-    {"id": 7, "type": "MATH", "topic": "Combinatorics & Counting", "question": "How many bit strings of length 4 either start with a 1 bit or end with 0?", "correct": "12"},
-    {"id": 8, "type": "MCQ", "topic": "Graph Theory", "question": "A graph with no cycles is called what?", "options": ["Bipartite", "Tree/Acyclic", "Complete", "Eulerian"], "correct": "Tree/Acyclic"},
-    {"id": 9, "type": "MATH", "topic": "Recurrence Relations", "question": "Find the next term in the sequence defined by a_n = 2a_{n-1} + 1 with a_0 = 1.", "correct": "3"},
-    {"id": 10, "type": "MCQ", "topic": "Recurrence Relations", "question": "The Fibonacci sequence is defined by which recurrence order?", "options": ["First Order", "Second Order", "Third Order", "None"], "correct": "Second Order"}
-]
-
-filtered_questions = [q for q in master_questions if q["topic"] in selected_topics]
-if not filtered_questions:
-    filtered_questions = master_questions
-
-if not st.session_state.exam_submitted:
-    with st.form("dynamic_exam_form_filtered"):
-        st.info(f"📋 Loaded {len(filtered_questions)} questions based strictly on your selected syllabus topics.")
-        
-        for idx, q in enumerate(filtered_questions):
-            st.markdown(f"##### **Question {idx+1}: {q['question']}**")
-            st.markdown(f"<span style='background-color:#334155; padding:2px 6px; border-radius:4px; color:#38bdf8; font-size:12px;'>🏷️ {q['topic']}</span>", unsafe_allow_html=True)
-            
-            if q['type'] == "MCQ":
-                st.session_state.user_answers[q['id']] = st.radio("Select answer:", q['options'], key=f"f_filt_mcq_{q['id']}_{idx}")
-            else:
-                st.session_state.user_answers[q['id']] = st.text_input("Type final answer:", key=f"f_filt_math_{q['id']}_{idx}").strip()
-            st.write("---")
-            
-        if st.form_submit_button("📤 Submit Dynamic Test"):
-            st.session_state.exam_submitted = True
-            st.session_state.user_score_history.append(1)
-            st.rerun()
-
-elif st.session_state.exam_submitted:
-    st.success("🎯 Evaluation Completed successfully for Selected Topics!")
-    
-    score = 0
-    total_q = len(filtered_questions)
-    topic_report = {}
-    detailed_report = []
-    
-    for q in filtered_questions:
-        u_ans = st.session_state.user_answers.get(q['id'], "")
-        is_correct = str(u_ans).lower() == str(q['correct']).lower()
-        if is_correct:
-            score += 1
-            
-        if q["topic"] not in topic_report:
-            topic_report[q["topic"]] = {"correct": 0, "total": 0}
-        topic_report[q["topic"]]["total"] += 1
-        if is_correct:
-            topic_report[q["topic"]]["correct"] += 1
-            
-        detailed_report.append({"Q_Id": q['id'], "Topic": q["topic"], "Your Answer": u_ans, "Correct Answer": q['correct'], "Result": "✅ Correct" if is_correct else "❌ Incorrect"})
-    
-    wrong = total_q - score
-    fig_report = go.Figure(data=[go.Pie(labels=['Correct', 'Incorrect'], values=[score, wrong], hole=.4, marker_colors=['#4ade80', '#f43f5e'])])
-    fig_report.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=240, margin=dict(l=0, r=0, b=0, t=0))
-    st.plotly_chart(fig_report, use_container_width=True)
-    
-    success_rate = (score / total_q) * 100 if total_q > 0 else 0
-    grade, color, bg_card = ("A+ 🏆", "#4ade80", "rgba(74, 222, 128, 0.1)") if success_rate >= 90 else (("A 🥇", "#38bdf8", "rgba(56, 189, 248, 0.1)") if success_rate >= 70 else (("B 🥈", "#fbbf24", "rgba(251, 191, 36, 0.1)") if success_rate >= 40 else ("F ❌", "#f43f5e", "rgba(244, 63, 94, 0.1)")))
-    
-    st.markdown(f"""
-        <div style='background:{bg_card}; border:1px solid {color}; padding:22px; border-radius:12px; margin-bottom:25px;'>
-            <h4 style='color:{color}; margin-top:0; font-weight:700;'>📊 Comprehensive Exam Report Card</h4>
-            <p style='font-size:16px; margin:4px 0;'><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>
-            <p style='font-size:16px; margin:4px 0;'><b>Syllabus Scope:</b> Dynamic Filtered Selected Topics</p>
-            <p style='font-size:16px; margin:4px 0;'><b>Final Score:</b> <span style='color:{color}; font-weight:bold;'>{score} / {total_q}</span> ({int(success_rate)}% Accuracy)</p>
-            <p style='font-size:18px; margin:8px 0;'><b>Academic Grade:</b> <span style='background:{color}; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;'>{grade}</span></p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("### 🎯 Cognitive Profile Analytics")
-    col_str, col_weak = st.columns(2)
-    
-    with col_str:
-        st.markdown("<h5 style='color: #4ade80;'>🔥 Core Strengths:</h5>", unsafe_allow_html=True)
-        for t, val in topic_report.items():
-            if val["total"] > 0 and val["correct"] / val["total"] >= 0.7:
-                st.markdown(f"* **{t}:** `{val['correct']}/{val['total']}` Solved Perfectly!")
-                
-    with col_weak:
-        st.markdown("<h5 style='color: #f43f5e;'>⚠️ Focus Areas (Weaknesses):</h5>", unsafe_allow_html=True)
-        for t, val in topic_report.items():
-            if val["total"] > 0 and val["correct"] / val["total"] < 0.7:
-                st.markdown(f"* **{t}:** `{val['correct']}/{val['total']}` Need Revision.")
-                
-    st.write("---")
-    
-    with st.expander("🔍 Detailed Answer Sheet Review"):
-        st.dataframe(pd.DataFrame(detailed_report), use_container_width=True)
-        
-    if st.button("🔄 Take Another Filtered Test"):
-        st.session_state.exam_submitted = False
-        st.session_state.user_answers = {}
-        st.rerun()
-
-st.write("---")
-st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
+st.write("Presidency University | CSE Dept
