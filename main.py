@@ -59,71 +59,64 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ২. ডাবল-লেয়ার এপিআই কি কনফিগারেশন রুটিন (Hardcoded Provided Key + Secrets + Manual Input)
-# আপনার দেওয়া API Key টি এখানে ডিফল্ট বা হার্ডকোডেড ব্যাকআপ হিসেবে সেট করা হয়েছে
-PROVIDED_API_KEY = "AQ.Ab8RN6L1MJGXMxsE_xp6sbtM01yn3kPMlmYmUlJnTMtnzRv4Lw"
-
+# ২. এপিআই কি কনফিগারেশন (বিকল্প মেকানিজম)
+# যদি st.secrets এ কী না থাকে, তাহলে এটি ড্যাশবোর্ড থেকে ইনপুট নেওয়া যাবে।
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
-    GEMINI_API_KEY = PROVIDED_API_KEY
+    GEMINI_API_KEY = ""
 
-# সাইডবারে ম্যানুয়াল এপিআই কী ইনপুট বক্স (অপশনাল ওভাররাইড)
+# সাইডবারে ম্যানুয়াল এপিআই কী ইনপুট বক্স
 st.sidebar.markdown("<h3 style='color: #38bdf8;'>🔑 API Configuration</h3>", unsafe_allow_html=True)
-manual_key = st.sidebar.text_input("Enter Gemini API Key (Optional Override):", type="password", help="If the default key fails, paste your key here.")
+manual_key = st.sidebar.text_input("Enter Valid Gemini API Key:", type="password", help="Enter a valid API key starting with AIzaSy...")
 
-# যেকোনো একটি কী পেলেই কনফিগারেশন রান করবে
-final_key = manual_key.strip() if manual_key.strip() else (GEMINI_API_KEY if GEMINI_API_KEY else "")
+# ফাইনাল কি চুজ করা
+final_key = manual_key.strip() if manual_key.strip() else GEMINI_API_KEY.strip()
 
 ai_ready = False
 connection_error_msg = ""
 used_gateway = "v1beta API Gateway"
 
-# জেমিনি REST API রিকোয়েস্ট ফাংশন (প্রমিত API রুট ও পেলোড ফরম্যাট)
+# জেমিনি REST API রিকোয়েস্ট ফাংশন 
 def call_gemini_rest(prompt_text, api_key):
-    # স্ট্যান্ডার্ড এবং স্টেবল v1beta API এন্ডপয়েন্ট ব্যবহার করা হয়েছে
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    
     headers = {'Content-Type': 'application/json'}
-    
     payload = {
         "contents": [
             {
                 "parts": [
-                    {
-                        "text": prompt_text
-                    }
+                    {"text": prompt_text}
                 ]
             }
         ]
     }
     
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=15)
+        response = requests.post(url, headers=headers, json=payload, timeout=12)
         if response.status_code == 200:
             res_json = response.json()
-            # সেফটি ও স্ট্রাকচার ভ্যালিডেশন চেক করে টেক্সট রিটার্ন
             if 'candidates' in res_json and len(res_json['candidates']) > 0:
                 text_out = res_json['candidates'][0]['content']['parts'][0]['text']
                 return text_out, True
             else:
-                return "API response block contains no valid text candidates.", False
+                return "No text candidates returned.", False
+        elif response.status_code == 401:
+            return "Invalid API Key. Please use a valid Google AI Studio Key (starts with AIzaSy).", False
         else:
-            return f"HTTP {response.status_code} - {response.text}", False
+            return f"Error {response.status_code}: {response.text}", False
     except Exception as exc:
         return str(exc), False
 
-# লাইভ কানেক্টিভিটি ভ্যালিডেশন টেস্ট পিং কল
+# লাইভ কানেক্টিভিটি টেস্ট পিং কল
 if final_key:
-    clean_key = str(final_key).strip().replace('"', '').replace("'", "")
-    test_output, is_ok = call_gemini_rest("Ping test. Reply with word 'OK' only.", clean_key)
+    test_output, is_ok = call_gemini_rest("Ping", final_key)
     if is_ok:
         ai_ready = True
         used_gateway = "v1beta (Gemini 1.5 Flash)"
     else:
         connection_error_msg = test_output
 else:
-    connection_error_msg = "No API Key detected in secrets, hardcoded variable, or manual input field."
+    connection_error_msg = "Please provide a valid Gemini API key in the sidebar or st.secrets."
 
 # স্ট্যাটাস প্যানেল রেন্ডারিং
 if ai_ready:
@@ -140,11 +133,9 @@ st.write("---")
 
 # 📊 ৩D গ্রাফ চার্ট
 st.markdown("<h3 style='color: #38bdf8;'>📊 Exam Analytics: Topic Importance Matrix</h3>", unsafe_allow_html=True)
-st.caption("💡 এটি একটি ইন্টারঅ্যাক্টিভ ৩D চার্ট। মাউস দিয়ে ড্র্যাগ করে বিভিন্ন অ্যাঙ্গেল থেকে পরীক্ষার টপিকগুলোর গুরুত্ব বিশ্লেষণ করা যাবে।")
 
 topics_x = ['Set Theory', 'Logic', 'Graph Theory', 'Combinatorics', 'Recurrence']
 exams_y = ['Quiz 1', 'Quiz 2', 'Midterm', 'Assignment', 'Final Exam']
-
 z_matrix = [
     [55, 65, 75, 60, 50],
     [65, 85, 90, 85, 65],
@@ -153,39 +144,20 @@ z_matrix = [
     [50, 65, 75, 60, 55]
 ]
 
-fig_3d = go.Figure(data=[go.Surface(
-    z=z_matrix, 
-    x=topics_x, 
-    y=exams_y,
-    colorscale='Viridis'
-)])
-
+fig_3d = go.Figure(data=[go.Surface(z=z_matrix, x=topics_x, y=exams_y, colorscale='Viridis')])
 fig_3d.update_layout(
-    scene=dict(
-        xaxis_title='Topics',
-        yaxis_title='Exams',
-        zaxis_title='Importance %'
-    ),
-    template="plotly_dark",
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)',
-    height=450,
-    margin=dict(l=0, r=0, b=0, t=10)
+    scene=dict(xaxis_title='Topics', yaxis_title='Exams', zaxis_title='Importance %'),
+    template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=400, margin=dict(l=0, r=0, b=0, t=10)
 )
 st.plotly_chart(fig_3d, use_container_width=True)
 st.write("---")
 
-# Session State ইনিশিয়ালাইজেশন
-if 'search_history' not in st.session_state:
-    st.session_state.search_history = []
-if 'ai_questions' not in st.session_state:
-    st.session_state.ai_questions = None
-if 'user_answers' not in st.session_state:
-    st.session_state.user_answers = {}
-if 'exam_submitted' not in st.session_state:
-    st.session_state.exam_submitted = False
-if 'current_level' not in st.session_state:
-    st.session_state.current_level = "Medium"
+# Session State
+if 'search_history' not in st.session_state: st.session_state.search_history = []
+if 'ai_questions' not in st.session_state: st.session_state.ai_questions = None
+if 'user_answers' not in st.session_state: st.session_state.user_answers = {}
+if 'exam_submitted' not in st.session_state: st.session_state.exam_submitted = False
+if 'current_level' not in st.session_state: st.session_state.current_level = "Medium"
 
 # ৩. সাইডবার প্রোফাইল
 st.sidebar.markdown("<h3 style='color: #38bdf8;'>🎓 Student Profile</h3>", unsafe_allow_html=True)
@@ -203,41 +175,29 @@ st.sidebar.page_link("https://presidency.edu.bd/", label="Presidency University 
 
 # ৪. ইউনিভার্সাল সিঙ্গেল ইনপুট ইন্টারফেস
 st.markdown("<h3 style='color: #38bdf8;'>🚀 Universal Math Input Box</h3>", unsafe_allow_html=True)
-st.caption("💡 Enter any Discrete Mathematics problem below (Truth Tables, Graphs, Sets, Counting, Recurrence):")
-
-user_query = st.text_area(
-    "📝 Type or paste your question here:",
-    placeholder="e.g., Find the explicit formula for a_n = 5a_{n-1} - 6a_{n-2}...",
-    height=110
-)
+user_query = st.text_area("📝 Type or paste your question here:", placeholder="e.g., Find the explicit formula...", height=110)
 
 if st.button("Generate Answer", use_container_width=True):
     if not user_query.strip():
         st.warning("⚠️ Please enter a question first!")
     else:
         with st.spinner("✨ Generating solution..."):
-            try:
-                if ai_ready and final_key:
-                    clean_key = str(final_key).strip().replace('"', '').replace("'", "")
-                    prompt = f"You are an expert university professor in Discrete Mathematics. Provide a rigorous, step-by-step, textbook-style solution with proper LaTeX formatting for this user question. Ensure it renders correctly in markdown. Question: {user_query}"
-                    
-                    solution, is_ok = call_gemini_rest(prompt, clean_key)
-                    
-                    if is_ok:
-                        st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
-                        st.balloons()
-                        st.success("🎉 Solution generated successfully!")
-                        st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-                        st.markdown(solution)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    else:
-                        st.error(f"❌ AI Execution Error: {solution}")
+            if ai_ready and final_key:
+                prompt = f"You are an expert university professor in Discrete Mathematics. Provide a rigorous, textbook solution with LaTeX formatting for: {user_query}"
+                solution, is_ok = call_gemini_rest(prompt, final_key)
+                if is_ok:
+                    st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
+                    st.balloons()
+                    st.success("🎉 Solution generated successfully!")
+                    st.markdown('<div class="answer-box">', unsafe_allow_html=True)
+                    st.markdown(solution)
+                    st.markdown('</div>', unsafe_allow_html=True)
                 else:
-                    st.error("⚠️ Core AI Engine is currently not connected. Please verify your API Key setup.")
-            except Exception as e:
-                st.error(f"❌ Core AI Engine Execution Error: {e}")
+                    st.error(f"❌ AI Error: {solution}")
+            else:
+                st.error("⚠️ Core AI Engine is not connected. Please put a valid Key in the sidebar input box.")
 
-# লাইভ সেশন সার্চ হিস্ট্রি লগ
+# সার্চ হিস্ট্রি লগ
 if st.session_state.search_history:
     with st.expander("📜 Live Session Search Log"):
         for idx, item in enumerate(st.session_state.search_history):
@@ -250,21 +210,12 @@ if st.session_state.search_history:
 
 st.write("---")
 
-# 🧠 ৫. মডিউল ২: মক টেস্ট ইঞ্জিন
-st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>", unsafe_allow_html=True)
-st.caption("💡 Select the exam difficulty level and generate 5 real exam-standard questions in English.")
-
+# ৫. মডিউল ২: মক টেস্ট ইঞ্জিন
+st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mock Test</h3>", unsafe_allow_html=True)
 levels_list = ["Easy", "Medium", "Hard"]
-if st.session_state.current_level in levels_list:
-    selected_idx = levels_list.index(st.session_state.current_level)
-else:
-    selected_idx = 1
+selected_idx = levels_list.index(st.session_state.current_level) if st.session_state.current_level in levels_list else 1
 
-exam_level = st.selectbox(
-    "🎯 Select Exam Difficulty Level:",
-    levels_list,
-    index=selected_idx
-)
+exam_level = st.selectbox("🎯 Select Exam Difficulty Level:", levels_list, index=selected_idx)
 
 if exam_level != st.session_state.current_level or st.session_state.ai_questions is None:
     st.session_state.current_level = exam_level
@@ -278,85 +229,25 @@ if exam_level != st.session_state.current_level or st.session_state.ai_questions
 
 if not st.session_state.exam_submitted:
     with st.form("dynamic_exam_form"):
-        st.info(f"⏱️ Exam Regulations: Answer all 5 [{exam_level}] level questions below. No negative marking.")
-        
+        st.info(f"⏱️ Exam Regulations: Answer all 5 [{exam_level}] level questions.")
         for q in st.session_state.ai_questions:
             st.markdown(f"#### **Question {q['id']}: {q['question']}**")
-            st.markdown(f"<span style='background-color:#334155; padding:2px 6px; border-radius:4px; color:#38bdf8; font-size:13px;'>🏷️ {q['topic']} | Type: {q['type']}</span>", unsafe_allow_html=True)
-            
             if q['type'] == "MCQ":
-                st.session_state.user_answers[q['id']] = st.radio(
-                    "Select your answer:", q['options'], key=f"ai_q_{q['id']}"
-                )
+                st.session_state.user_answers[q['id']] = st.radio("Select answer:", q['options'], key=f"ai_q_{q['id']}")
             else:
-                st.session_state.user_answers[q['id']] = st.text_input(
-                    "Type your numerical/final answer here:", key=f"ai_q_{q['id']}"
-                ).strip()
+                st.session_state.user_answers[q['id']] = st.text_input("Type numerical answer:", key=f"ai_q_{q['id']}").strip()
             st.write("---")
-            
         if st.form_submit_button("📤 Submit Mock Test"):
             st.session_state.exam_submitted = True
             st.rerun()
-
 elif st.session_state.exam_submitted:
-    st.success("🎯 Evaluation Completed! Check your interactive report below:")
+    st.success("🎯 Evaluation Completed!")
+    score = sum(1 for q in st.session_state.ai_questions if str(st.session_state.user_answers.get(q['id'], '')).lower() == str(q['correct']).lower())
+    wrong = len(st.session_state.ai_questions) - score
     
-    score = 0
-    total_q = len(st.session_state.ai_questions)
-    detailed_report = []
-    
-    for q in st.session_state.ai_questions:
-        u_ans = st.session_state.user_answers.get(q['id'], "")
-        is_correct = str(u_ans).lower() == str(q['correct']).lower()
-        if is_correct:
-            score += 1
-        detailed_report.append({
-            "Question": q['question'],
-            "Your Answer": u_ans,
-            "Correct Answer": q['correct'],
-            "Result": "✅ Correct" if is_correct else "❌ Incorrect"
-        })
-            
-    wrong = total_q - score
-    
-    fig = go.Figure(data=[go.Pie(
-        labels=['Correct', 'Incorrect'], 
-        values=[score, wrong], 
-        hole=.4,
-        marker_colors=['#4ade80', '#f43f5e']
-    )])
-    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=300)
+    fig = go.Figure(data=[go.Pie(labels=['Correct', 'Incorrect'], values=[score, wrong], hole=.4, marker_colors=['#4ade80', '#f43f5e'])])
+    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=250)
     st.plotly_chart(fig, use_container_width=True)
-    
-    success_rate = (score / total_q) * 100
-    if score == 5:
-        grade, color, bg_card = "A+", "#4ade80", "rgba(74, 222, 128, 0.1)"
-        feedback = f"Outstanding performance! Your preparation for {exam_level} level questions is 100% perfect. Keep it up!"
-    elif score >= 4:
-        grade, color, bg_card = "A", "#38bdf8", "rgba(56, 189, 248, 0.1)"
-        feedback = f"Excellent job! Your core concepts are highly clear for {exam_level} level problems. Review the minor mistakes to target full marks."
-    elif score >= 2:
-        grade, color, bg_card = "B", "#fbbf24", "rgba(251, 191, 36, 0.1)"
-        feedback = f"Moderate performance. There are gaps in your understanding of {exam_level} level topics. We recommend revising your lecture sheets."
-    else:
-        grade, color, bg_card = "F (Fail)", "#f43f5e", "rgba(244, 63, 94, 0.1)"
-        feedback = f"Unsatisfactory score. You need to rebuild your foundational understanding of {exam_level} level concepts. Use the Universal Math Solver to practice more."
-
-    # পিওর সিঙ্গেল-লাইন অবজেক্ট রেন্ডারিং
-    report_html = f'<div style="background:{bg_card}; border:1px solid {color}; padding:20px; border-radius:8px; margin-bottom:25px;">'
-    report_html += f'<h3 style="color:{color}; margin-top:0; font-weight:600;">📊 Comprehensive Exam Report Card</h3>'
-    report_html += f'<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>'
-    report_html += f'<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Exam Level:</b> {exam_level}</p>'
-    report_html += f'<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Final Score:</b> <span style="color:{color}; font-weight:bold;">{score} / {total_q}</span> ({int(success_rate)}% Accuracy)</p>'
-    report_html += f'<p style="font-size:18px; color:#e2e8f0; margin:10px 0;"><b>Grade:</b> <span style="background:{color}; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;">{grade}</span></p>'
-    report_html += f'<hr style="border-color:{color}; opacity:0.2;">'
-    report_html += f'<p style="font-style:italic; color:#cbd5e1; margin-bottom:0;"><b>🗣️ Academic Feedback & Guidance:</b> {feedback}</p>'
-    report_html += '</div>'
-    
-    st.markdown(report_html, unsafe_allow_html=True)
-    
-    with st.expander("🔍 Detailed Answer Sheet Review"):
-        st.dataframe(pd.DataFrame(detailed_report), use_container_width=True)
     
     if st.button("🔄 Take Another AI Test"):
         st.session_state.exam_submitted = False
