@@ -61,7 +61,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ২. এপিআই কি কনফিগারেশন ও লাইভ স্ট্যাটাস চেক লজিক (১০০% ভ্যালিডেটেড)
+# ২. এপিআই কি কনফিগারেশন ও রিয়েল-টাইম লাইভ টেস্ট পিং লজিক (১০০% বুলেটপ্রুফ)
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
@@ -71,15 +71,19 @@ ai_ready = False
 if GEMINI_API_KEY:
     try:
         genai.configure(api_key=GEMINI_API_KEY)
-        # ১.৫ ফ্ল্যাশ মডেল দিয়ে টেস্ট পিং কল ব্যাকএন্ড কমপাইল করা হয়েছে
-        ai_model = genai.GenerativeModel(model_name='gemini-1.5-flash')
-        ai_ready = True
+        # ইউনিভার্সাল ও বেস মডেল সিলেক্ট করা হলো যা AQ কি-র সাথে সামঞ্জস্যপূর্ণ
+        ai_model = genai.GenerativeModel(model_name='gemini-pro')
+        
+        # 🎯 ট্রিক: সার্ভারে একটি রিয়েল ২-টোকেন টেস্ট কল পাঠিয়ে কানেকশন ও কি পারমিশন ১০০% যাচাই করা হচ্ছে
+        test_response = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 2})
+        if test_response.text:
+            ai_ready = True
     except Exception:
         ai_ready = False
 else:
     ai_model = None
 
-# 🎯 রিকোয়ারমেন্ট অনুযায়ী সবার ওপরে সব সময় দৃশ্যমান লাইভ ইন্ডিকেটর প্যানেল
+# সবার ওপরে দৃশ্যমান লাইভ ইন্ডিকেটর প্যানেল (কানেকশন ও কি এরর এখন সরাসরি ট্র্যাক হবে)
 if ai_ready:
     st.markdown('<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: READY TO PERFORM</div>', unsafe_allow_html=True)
 else:
@@ -90,18 +94,17 @@ st.subheader("Discrete Mathematics Engine & Interactive Exam Lab")
 st.write("Presidency University | CSE Dept | Academic Edition")
 st.write("---")
 
-# 📊 ৩D গ্রাফ চার্ট: সুনির্দিষ্ট ৫x৫ ডাইমেনশন ম্যাট্রিক্স (কম্পাইলার ভ্যালিডেটেড ফলব্যাক)
+# 📊 ৩D গ্রাফ চার্ট: সুনির্দিষ্ট ৫x৫ ডাইমেনশন ম্যাট্রিক্স
 st.markdown("<h3 style='color: #38bdf8;'>📊 Exam Analytics: Topic Importance Matrix</h3>", unsafe_allow_html=True)
 st.caption("💡 এটি একটি ইন্টারঅ্যাক্টিভ ৩D চার্ট। মাউস দিয়ে ড্র্যাগ করে বিভিন্ন অ্যাঙ্গেল থেকে পরীক্ষার টপিকগুলোর গুরুত্ব বিশ্লেষণ করা যাবে।")
 
-# ৫টি টপিক এবং ৫টি পরীক্ষার টাইপ মিলিয়ে পারফেক্ট ৫x৫ জ্যামিতিক গ্রিড তৈরি করা হয়েছে
 topics_x = ['Set Theory', 'Logic', 'Graph Theory', 'Combinatorics', 'Recurrence']
 exams_y = ['Quiz 1', 'Quiz 2', 'Midterm', 'Assignment', 'Final Exam']
 
 z_matrix = [
     [55, 65, 75, 60, 50],
     [65, 85, 90, 85, 65],
-    [75, 90, 98, 90, 75], # গ্রাফ থিওরি ফাইনাল এক্সামে সর্বোচ্চ গুরুত্বপূর্ণ (৯৮%)
+    [75, 90, 98, 90, 75], 
     [60, 85, 90, 85, 60],
     [50, 65, 75, 60, 55]
 ]
@@ -174,7 +177,7 @@ if st.button("Generate Answer", use_container_width=True):
                     solution = response.text
                     st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
                 else:
-                    solution = "⚠️ Core AI Engine is currently not connected. Please check your credentials."
+                    solution = "⚠️ Core AI Engine is currently not connected or API permissions are invalid."
                 
                 st.balloons()
                 st.success("🎉 Solution generated successfully!")
@@ -184,7 +187,7 @@ if st.button("Generate Answer", use_container_width=True):
                 st.markdown('</div>', unsafe_allow_html=True)
                 
             except Exception as e:
-                st.error(f"❌ Error: {e}")
+                st.error(f"❌ Core AI Engine Execution Error: {e}")
 
 # লাইভ সেশন সার্চ হিস্ট্রি লগ
 if st.session_state.search_history:
