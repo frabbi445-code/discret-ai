@@ -56,7 +56,7 @@ st.markdown("""
     .answer-box * { color: #000000 !important; }
     .answer-box .katex, .answer-box .katex * { color: #000000 !important; font-weight: 600 !important; }
     
-    /* ফ্ল্যাশ কার্ড স্টাইলিং */
+    /* ফ্ল্যাশカード স্টাইলিং */
     .flashcard {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
         border: 2px solid #38bdf8 !important;
@@ -77,7 +77,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ২. এপিআই কি কনফিগারেশন ও API NotFound Error Fix
+# ২. এপিআই কি কনফিগারেশন
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
@@ -90,7 +90,6 @@ if GEMINI_API_KEY:
     clean_key = str(GEMINI_API_KEY).strip().replace('"', '').replace("'", "")
     try:
         genai.configure(api_key=clean_key)
-        # API 404/NotFound এড়াতে স্টেবল মডেল ব্যবহার করা হয়েছে
         ai_model = genai.GenerativeModel('gemini-1.5-flash')
         ai_ready = True
     except Exception:
@@ -198,13 +197,11 @@ selected_topics = [t for t in topic_data.keys() if st.checkbox(t, value=True, ke
 if selected_topics:
     col_chart1, col_chart2 = st.columns(2)
     
-    # Chart 1: Importance Weight (Pie Chart)
     labels = selected_topics
     importance_values = [topic_data[t]["importance"] for t in selected_topics]
     fig_pie = go.Figure(data=[go.Pie(labels=labels, values=importance_values, hole=.3, marker_colors=['#0ea5e9', '#38bdf8', '#0284c7', '#7dd3fc', '#bae6fd'])])
     fig_pie.update_layout(title="Exam Importance (%)", template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=260, margin=dict(l=10, r=10, b=10, t=40))
     
-    # Chart 2: Hardness Level (Bar Chart - ADDED OPTION)
     hardness_values = [topic_data[t]["hardness"] for t in selected_topics]
     fig_bar = go.Figure(data=[go.Bar(x=labels, y=hardness_values, marker_color='#f43f5e')])
     fig_bar.update_layout(title="Topic Hardness Index (1-100)", template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=260, margin=dict(l=10, r=10, b=10, t=40))
@@ -218,14 +215,17 @@ else:
 
 st.write("---")
 
-# 📚 ৬. গ্লোবাল লেকচার ডাটাবেস এবং ইন্টারঅ্যাক্টিভ লেসন জেনারেটর (বাংলা + English + Diagrams)
+# 📚 ৬. গ্লোবাল লেকচার ডাটাবেস এবং ইন্টারঅ্যাক্টিভ লেসন জেনারেটর (Syntax Safe Multiline Block)
 st.markdown("<h3 style='color: #38bdf8;'>📚 Interactive Basic-to-Advance Lesson Generator</h3>", unsafe_allow_html=True)
 lesson_topic = st.selectbox("📖 Choose a topic to learn:", list(topic_data.keys()))
 
 global_lecture_db = {
-    "Recurrence Relations": r"""### 📘 Masterclass Lecture: Recurrence Relations (পুনরাবৃত্তি সম্পর্ক)
-#### **১. ভূমিকা ও বেসিক লেভেল (Basic Introduction):**
-একটি পুনরাবৃত্তি সম্পর্ক (Recurrence Relation) হলো এমন একটি গাণিতিক সমীকরণ যা কোনো সিকোয়েন্সের $n$-তম পদকে তার পূর্ববর্তী পদগুলোর (যেমন: $a_{n-1}, a_{n-2}$) মাধ্যমে প্রকাশ করে।
-* **CSE Application:** এটি অ্যালগরিদমের টাইম কমপ্লেক্সিটি (যেমন: Divide and Conquer, Merge Sort) বের করতে ব্যবহৃত হয়।
-
-#### **২. ইন্টারঅ্যাক্টিভ মডেল ও ডায়াগ্রাম (Visual Representation):**
+    "Recurrence Relations": (
+        "### 📘 Masterclass Lecture: Recurrence Relations (পুনরাবৃত্তি সম্পর্ক)\n\n"
+        "#### **১. ভূমিকা ও বেসিক লেভেল (Basic Introduction):**\n"
+        "একটি পুনরাবৃত্তি সম্পর্ক (Recurrence Relation) হলো এমন একটি গাণিতিক সমীকরণ যা কোনো সিকোয়েন্সের n-তম পদকে তার পূর্ববর্তী পদগুলোর (যেমন: a_{n-1}, a_{n-2}) মাধ্যমে প্রকাশ করে।\n"
+        "* **CSE Application:** এটি অ্যালগরিদমের টাইম কমপ্লেক্সিটি (যেমন: Divide and Conquer, Merge Sort) বের করতে ব্যবহৃত হয়。\n\n"
+        "#### **২. ইন্টারঅ্যাক্টিভ মডেল ও ডায়াগ্রাম (Visual Representation):**\n"
+        "
+http://googleusercontent.com/immersive_entry_chip/0
+http://googleusercontent.com/immersive_entry_chip/1
