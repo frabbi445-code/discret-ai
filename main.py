@@ -104,40 +104,32 @@ def call_universal_ai(prompt_text, api_key, provider_name):
             "temperature": 0.3
         }
         try:
-            res = requests.post(url, headers=headers, json=payload, timeout=25)
+            res = requests.post(url, headers=headers, json=payload, timeout=15)
             if res.status_code == 200:
                 return res.json()['choices'][0]['message']['content'], True
             return f"OpenAI Error {res.status_code}: {res.text}", False
-        except requests.exceptions.Timeout:
-            return "⚠️ OpenAI সার্ভার রেসপন্স করতে অনেক সময় নিচ্ছে (Timeout)। দয়া করে আবার চেষ্টা করুন।", False
         except Exception as e: return str(e), False
 
     elif provider_name == "Gemini":
         gateways = [
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
         ]
         
+        last_error = ""
         for url_template in gateways:
             url = f"{url_template}?key={api_key}"
             headers = {'Content-Type': 'application/json'}
             payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
             try:
-                # টাইমআউট বাড়িয়ে ৩০ সেকেন্ড করা হয়েছে যাতে 'Read timed out' এরর সহজে না আসে
-                res = requests.post(url, headers=headers, json=payload, timeout=30)
-                
-                if res.status_code == 429:
-                    return "⚠️ Gemini API-এর ফ্রি লিমিট (Quota Exceeded) সাময়িক শেষ! অনুগ্রহ করে ১ মিনিট পর আবার চেষ্টা করুন।", False
-                
+                res = requests.post(url, headers=headers, json=payload, timeout=12)
+                # --- [FIXED] এখানে সিনট্যাক্স এররটি সম্পূর্ণ জোড়া লাগানো হয়েছে ---
                 if res.status_code == 200:
                     return res.json()['candidates'][0]['content']['parts'][0]['text'], True
-                
-            except requests.exceptions.Timeout:
-                continue  # প্রথম ইউআরএল কাজ না করলে বা টাইমআউট হলে পরের ব্যাকআপ ইউআরএল চেষ্টা করবে
+                last_error = f"Gemini Error {res.status_code}: {res.text}"
             except Exception as e: 
-                return f"কানেকশন এরর: {str(e)}", False
-                
-        return "⚠️ Gemini সার্ভার থেকে উত্তর পেতে ব্যর্থ (Timeout)। সার্ভার অতিরিক্ত বিজি বা আপনার ইন্টারনেট সাময়িক স্লো হতে পারে। দয়া করে আবার চেষ্টা করুন।", False
+                last_error = str(e)
+        return last_error, False
 
     elif provider_name == "Claude":
         url = "https://api.anthropic.com/v1/messages"
@@ -152,93 +144,41 @@ def call_universal_ai(prompt_text, api_key, provider_name):
             "messages": [{"role": "user", "content": prompt_text}]
         }
         try:
-            res = requests.post(url, headers=headers, json=payload, timeout=25)
+            res = requests.post(url, headers=headers, json=payload, timeout=15)
             if res.status_code == 200:
                 return res.json()['content'][0]['text'], True
             return f"Claude Error {res.status_code}: {res.text}", False
-        except requests.exceptions.Timeout:
-            return "⚠️ Claude সার্ভার রেসপন্স করতে অনেক সময় নিচ্ছে (Timeout)।", False
         except Exception as e: return str(e), False
         
-    return "সঠিক কোনো API Key খুঁজে পাওয়া যায়নি! অনুগ্রহ করে সাইডবারে কি টাইপ করুন।", False
+    return "Unsupported or undetected provider", False
 
-# =================================================================
-# ৩. মেইন ইউজার ইন্টারফেস (UI) ও মক টেস্ট লজিক রেন্ডারিং
-# =================================================================
+# ৩. মেইন ইউজার ইন্টারফেস (UI) রেন্ডারিং
 st.title("🧠 DiscreteMind AI")
 st.markdown("Your advanced AI companion for smart reasoning and instant solutions.")
 
-# সাইডবারে লাইভ কানেকশন ইন্ডিকেটর প্যানেল
+# সাইডবারে লাইভ স্ট্যাটাস ইন্ডিকেটর
 if provider:
     st.sidebar.markdown(f'<div class="status-panel" style="background-color: #1e3a1e; color: #4ade80; border: 1px solid #22c55e;">Connected to: {provider}</div>', unsafe_allow_html=True)
 else:
     st.sidebar.markdown('<div class="status-panel" style="background-color: #3a1e1e; color: #f87171; border: 1px solid #ef4444;">Not Connected</div>', unsafe_allow_html=True)
 
-# মক টেস্ট ও ইনপুট ফর্ম বক্স
+# ইউজার ইনপুট ফর্ম বক্স
 with st.form("ai_form"):
-    user_prompt = st.text_area("Ask me anything / Generate Mock Test:", placeholder="Type your question or request a mock test here...")
+    user_prompt = st.text_area("Ask me anything:", placeholder="Type your question or problem here...")
     submit_button = st.form_submit_button("Generate Response")
 
-# =================================================================
-# ৪. রেসপন্স প্রসেসিং, ডেটা ফ্রেম এবং ড্যাশবোর্ড লজিক
-# =================================================================
+# সাবমিট অ্যাকশন হ্যান্ডলার
 if submit_button:
     if not final_key:
         st.error("🔑 API Key পাওয়া যায়নি! দয়া করে সাইডবারে একটি সঠিক Key প্রদান করুন।")
     elif not user_prompt.strip():
-        st.warning("⚠️ দয়া করে বক্সে আপনার প্রশ্ন বা রিকোয়েস্টটি লিখুন।")
+        st.warning("⚠️ দয়া করে বক্সে আপনার প্রশ্নটি লিখুন।")
     else:
-        with st.spinner("Processing with AI..."):
+        with st.spinner("Processing your request..."):
             response_text, success = call_universal_ai(user_prompt, final_key, provider)
             
             if success:
-                st.markdown("### 📝 AI Response / Test Papers")
+                # আপনার CSS থিম অনুযায়ী সুন্দর সাদা বক্সে এআই এর আউটপুট জেনারেট হবে
                 st.markdown(f'<div class="answer-box">{response_text}</div>', unsafe_allow_html=True)
-                
-                st.markdown("---")
-                st.markdown("## 📊 Performance & Confidence Analytics")
-                
-                # কাস্টম অ্যানালিসিসের জন্য মক ডেটা টেবিল (Pandas DataFrame)
-                metrics_data = {
-                    "Metric/Topic": ["Accuracy", "Speed", "Conceptual Clarity", "Response Time"],
-                    "Score (%)": [88, 75, 92, 80],
-                    "Status": ["Excellent", "Needs Improvement", "Outstanding", "Good"]
-                }
-                df = pd.DataFrame(metrics_data)
-                
-                st.markdown("### 📋 Evaluation Matrix")
-                st.dataframe(df, use_container_width=True)
-                
-                # Plotly ড্যাশবোর্ড গেজ চার্ট রেন্ডারিং
-                st.markdown("### 📈 Accuracy Meter")
-                fig = go.Figure(go.Indicator(
-                    mode = "gauge+number",
-                    value = 88,
-                    domain = {'x': [0, 1], 'y': [0, 1]},
-                    title = {'text': "Overall Score", 'font': {'color': '#38bdf8', 'size': 20}},
-                    gauge = {
-                        'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "#f8fafc"},
-                        'bar': {'color': "#0284c7"},
-                        'bgcolor': "#1e293b",
-                        'borderwidth': 2,
-                        'bordercolor': "#334155",
-                        'steps': [
-                            {'range': [0, 50], 'color': '#3a1e1e'},
-                            {'range': [50, 80], 'color': '#2e2a14'},
-                            {'range': [80, 100], 'color': '#1e3a1e'}
-                        ],
-                    }
-                ))
-                
-                fig.update_layout(
-                    paper_bgcolor='#0f172a',
-                    plot_bgcolor='#0f172a',
-                    font={'color': "#f8fafc", 'family': "Arial"},
-                    margin=dict(l=20, r=20, t=50, b=20),
-                    height=300
-                )
-                st.plotly_chart(fig, use_container_width=True)
-                
             else:
-                # কোনো এরর আসলে সেটি কুৎসিত লাল এরর বক্সের বদলে স্ট্রিমলিটের মার্জিত নোটিফিকেশনে দেখাবে
-                st.error(response_text)
+                st.error(f"❌ Error: {response_text}")
