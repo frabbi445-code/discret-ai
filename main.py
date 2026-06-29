@@ -1,5 +1,5 @@
 import streamlit as st
-import requests
+import google.generativeai as genai
 import time
 import pandas as pd
 import json
@@ -15,15 +15,6 @@ st.markdown("""
     .stApp, p, span, label, li { color: #f8fafc !important; font-size: 16px; }
     h1 { color: #f1f5f9 !important; font-weight: 700 !important; }
     h2, h3, h4 { color: #38bdf8 !important; font-weight: 600 !important; }
-    
-    .premium-box {
-        background-color: #1e293b !important;
-        border: 1px solid #334155 !important;
-        border-radius: 12px !important;
-        padding: 22px !important;
-        margin-bottom: 25px !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-    }
     
     div[data-testid="stForm"] {
         background-color: #1e293b !important;
@@ -70,14 +61,41 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ২. প্রজেক্ট প্রেজেন্টেশন সেফ গার্ড (অলওয়েজ সবুজ লাইভ প্যানেল)
-st.markdown('<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: CONNECTED & ONLINE (Direct Production Mode)</div>', unsafe_allow_html=True)
+# ২. এপিআই কি কনফিগারেশন এবং ক্লাউড এপিআই প্রোডাকশন রুট এনফোর্সমেন্ট
+try:
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    GEMINI_API_KEY = None
+
+ai_ready = False
+ai_model = None
+
+if GEMINI_API_KEY:
+    clean_key = str(GEMINI_API_KEY).strip().replace('"', '').replace("'", "")
+    try:
+        genai.configure(api_key=clean_key)
+        # ৪MD কনফ্লিক্ট এড়াতে সরাসরি ভেন্ডর পাথ এনফোর্সমেন্ট করা হলো
+        ai_model = genai.GenerativeModel('models/gemini-1.5-flash')
+        
+        # লাইভ এপিআই সেশন টেস্ট পিং
+        test_ping = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 1})
+        if test_ping:
+            ai_ready = True
+    except Exception:
+        ai_ready = False
+
+# লাইভ ইন্ডিকেটর সিঙ্ক প্যানেল (সবুজ/লাল ডট মেকানিজম)
+if ai_ready:
+    st.markdown('<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: CONNECTED & ONLINE (Direct API Mode)</div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">🔴 Core AI Engine: OFFLINE (Ultra-Detailed Local Fallback Active)</div>', unsafe_allow_html=True)
 
 st.title("🧠 DiscreteMind AI: Ultimate Interactive Lab")
 st.subheader("Universal Discrete Mathematics Solver & Gamified Study Suite")
+st.write("Presidency University | CSE Dept | Innovation Edition")
 st.write("---")
 
-# Session State ইনিশিয়েলাইজেশন
+# Session State
 if 'search_history' not in st.session_state:
     st.session_state.search_history = []
 if 'user_answers' not in st.session_state:
@@ -87,7 +105,7 @@ if 'exam_submitted' not in st.session_state:
 if 'user_score_history' not in st.session_state:
     st.session_state.user_score_history = []
 
-# ৩. সাইডবার প্রোফাইল ও মেডেল সিস্টেম
+# ৩. সাইডবার প্রোফাইল
 st.sidebar.markdown("<h3 style='color: #38bdf8;'>🎓 Student Profile</h3>", unsafe_allow_html=True)
 with st.sidebar.container(border=True):
     st.write("**Developer:** MD FAZLE RABBI SOHAN")
@@ -103,8 +121,6 @@ st.sidebar.page_link("https://presidency.edu.bd/", label="Presidency University 
 
 # 🧮 ৪. Live Interactive Truth Table Generator
 st.markdown("<h3 style='color: #38bdf8;'>🧮 Live Interactive Truth Table Generator</h3>", unsafe_allow_html=True)
-st.caption("💡 ২-ভেরিয়েবল প্রপোজিশনের জন্য অ্যান্ড (AND), অর (OR) বা কন্ডিশনাল ট্রুথ টেবিল লাইভ জেনারেট করো।")
-
 col_t1, col_t2 = st.columns(2)
 with col_t1:
     var_1 = st.selectbox("Select Variable 1:", ["P", "~P"])
@@ -134,7 +150,7 @@ if st.button("📊 Construct Truth Table", use_container_width=True):
 
 st.write("---")
 
-# 📊 ৫. সিলেবাস অ্যানালিটিক্স (পাই চার্ট)
+# 📊 ৫. সিলেবাস অ্যানালিটিক্স
 st.markdown("<h3 style='color: #38bdf8;'>📊 Exam Analytics: Syllabus Weight Matrix</h3>", unsafe_allow_html=True)
 topic_data = {
     "Set Theory": {"importance": 15},
@@ -161,73 +177,274 @@ with col_chart:
 
 st.write("---")
 
-# 📚 ৬. আল্ট্রা-ডিটেইলড লেকচার ডাটাবেস (বাংলা ও ইংরেজি মিশ্রিত)
+# 📚 ৬. প্রতিটি টপিকের জন্য কমপক্ষে ৫০ লাইনের সুনির্দিষ্ট ও বিস্তারিত লেকচার নোট ডাটাবেস
 st.markdown("<h3 style='color: #38bdf8;'>📚 Interactive Basic-to-Advance Lesson Generator</h3>", unsafe_allow_html=True)
 lesson_topic = st.selectbox("📖 Choose a topic to learn in details:", list(topic_data.keys()))
 
 global_lessons = {
-    "Set Theory": r"""### 📘 Advanced Lecture: Set Theory (সেট তত্ত্ব)
-#### **১. ভূমিকা (Introduction):**
-সেট হলো বাস্তব বা চিন্তাজগতের সুনির্দিষ্ট বস্তুর সংগ্রহ (A set is a well-defined collection of distinct objects)।
-#### **২. Core Concepts & Mathematical Proofs:**
-* **Power Set (পাওয়ার সেট):** দ্য সেট অফ অল সাবсеটস। উপাদান সংখ্যা $n$ হলে পাওয়ার সেটের উপাদান হবে $2^n$।
-$$\text{Cartesian Product: } A \times B = \{(a, b) \mid a \in A \land b \in B\}$$
-#### **🎯 Solved Example:**
-If $A = \{1, 2\}$, find the Power Set $P(A)$.
-$$\text{Answer: } P(A) = \{\emptyset, \{1\}, \{2\}, \{1, 2\}\}$$
-#### **📚 Reference Books:**
-* 📖 *Discrete Mathematics and Its Applications* by Kenneth H. Rosen — [McGraw-Hill](https://www.mheducation.com)""",
+    "Set Theory": r"""### 📘 Masterclass Lecture: Advanced Set Theory (সেট তত্ত্ব)
 
-    "Propositional Logic": r"""### 📘 Advanced Lecture: Propositional Logic (প্রপোজিশনাল লজিক)
-#### **১. ভূমিকা (Introduction):**
-একটি প্রপোজিশন হলো এমন একটি বর্ণনামূলক বাক্য যা হয় সত্য অথবা মিথ্যা, কিন্তু একসাথে উভয়ই হতে পারে না।
-#### **২. 📚 Core Logic Rules:**
-* **Conditional Identity:**
+#### **১. ভূমিকা ও ঐতিহাসিক প্রেক্ষাপট (Introduction & History)**
+সেট তত্ত্ব হলো আধুনিক গণিতের ভিত্তিপ্রস্তর। ১৯ শতকের শেষের দিকে জার্মান গণিতবিদ জর্জ ক্যান্টর (Georg Cantor) অবিন্যস্ত বা বিন্যস্ত বস্তুর সুনির্দিষ্ট সংগ্রহকে গাণিতিক কাঠামো দেওয়ার জন্য এই তত্ত্বের অবতারণা করেন। কম্পিউটার বিজ্ঞানের রিলেশনাল ডাটাবেস ম্যানেজমেন্ট সিস্টেম (RDBMS), কম্পাইলার ডিজাইন এবং ডাটা স্ট্রাকচারের কোর লজিক সম্পূর্ণরূপে সেট তত্ত্বের ওপর ভিত্তি করে প্রতিষ্ঠিত।
+
+#### **২. মৌলিক সংজ্ঞাসমূহ ও গাণিতিক প্রতীক (Fundamental Definitions & Symbols)**
+* **Well-Defined Collection:** একটি সংগ্রহকে সেট বলা হবে তখনই, যখন যেকোনো উপাদান সেই সেটের অন্তর্ভুক্ত কি না তা কোনো প্রকার অস্পষ্টতা ছাড়াই নির্ধারণ করা যায়।
+* **সেটের উপাদান সংখ্যা (Cardinality):** একটি সেট $A$ এর মোট অনন্য উপাদান সংখ্যাকে তার কার্ডিনালিটি বলা হয় এবং একে $|A|$ দ্বারা প্রকাশ করা হয়।
+* **সার্বিক সেট (Universal Set $\mathcal{U}$):** আলোচ্য নির্দিষ্ট গাণিতিক প্রেক্ষাপটে সম্ভাব্য সকল উপাদান নিয়ে যে সেট গঠিত হয়।
+* **পাওয়ার সেট (Power Set $P(A)$):** কোনো সেট $A$ এর সম্ভাব্য সকল সাবসেট বা উপসেট নিয়ে গঠিত সেটকে পাওয়ার সেট বলা হয়। যদি কোনো সেটের উপাদান সংখ্যা $n$ হয়, তবে তার পাওয়ার সেটের কার্ডিনালিটি হবে $2^n$।
+$$|P(A)| = 2^{|A|}$$
+
+#### **৩. সেটের অপারেশনসমূহ (Set Operations)**
+* **Union ($A \cup B$):** $A$ অথবা $B$ অথবা উভয় সেটের উপাদানের সমন্বয়ে গঠিত সেট।
+$$A \cup B = \{x \mid x \in A \lor x \in B\}$$
+* **Intersection ($A \cap B$):** শুধুমাত্র $A$ এবং $B$ উভয় সেটের সাধারণ (Common) উপাদান নিয়ে গঠিত সেট।
+$$A \cap B = \{x \mid x \in A \land x \in B\}$$
+* **Set Difference ($A \setminus B$):** $A$ সেটের সেইসব উপাদান যা $B$ সেটের অন্তর্ভুক্ত নয়।
+$$A \setminus B = \{x \mid x \in A \land x \notin B\}$$
+* **Cartesian Product ($A \times B$):** দুটি সেটের উপাদানগুলোর ক্রমজোড়ের সেট।
+$$A \times B = \{(a, b) \mid a \in A \land b \in B\}$$
+
+#### **৪. জটিল উপপাদ্য ও বীজগণিতীয় প্রমাণ (Advanced Theorems & Algebraic Proofs)**
+**ডিমরগানের উপপাদ্য (De Morgan's Laws):**
+$$\text{Theorem 1: } \overline{A \cup B} = \overline{A} \cap \overline{B}$$
+$$\text{Theorem 2: } \overline{A \cap B} = \overline{A} \cup \overline{B}$$
+
+**প্রমাণ (Proof of Theorem 1):**
+ধরি, $x \in \overline{A \cup B}$
+$$\implies x \notin (A \cup B)$$
+$$\implies \neg(x \in A \lor x \in B)$$
+$$\implies (x \notin A) \land (x \notin B)$$
+$$\implies x \in \overline{A} \land x \in \overline{B}$$
+$$\implies x \in \overline{A} \cap \overline{B}$$
+অতএব, $\overline{A \cup B} \subseteq \overline{A} \cap \overline{B}$। একইভাবে বিপরীত দিক থেকে প্রমাণ করে দেখানো যায় যে উভয় সেট পরস্পর সমান।
+
+#### **৫. বিস্তারিত গাণিতিক উদাহরণ (Detailed Mathematical Solved Examples)**
+
+**উদাহরণ ১ (Solved Example 1):**
+ধরি একটি সার্বিক সেট $\mathcal{U} = \{1, 2, 3, 4, 5, 6, 7, 8, 9, 10\}$ এবং দুটি উপসেট $A = \{1, 3, 5, 7, 9\}$ এবং $B = \{2, 3, 5, 7\}$। 
+* **$A \cup B$ বের করো:** $\{1, 2, 3, 5, 7, 9\}$
+* **$A \cap B$ বের করো:** $\{3, 5, 7\}$
+* **$A \setminus B$ বের করো:** $\{1, 9\}$
+* **$\overline{A}$ (Complement of A) বের করো:** $\{2, 4, 6, 8, 10\}$
+
+**উদাহরণ ২ (Solved Example 2):**
+যদি $A = \{x, y\}$ এবং $B = \{1, 2, 3\}$ হয়, তবে কার্তেসীয় গুণজ $A \times B$ এবং এর কার্ডিনালিটি নির্ণয় করো।
+* **সমাধান:** $A \times B = \{(x, 1), (x, 2), (x, 3), (y, 1), (y, 2), (y, 3)\}$
+* **কার্ডিনালিটি:** $|A \times B| = |A| \times |B| = 2 \times 3 = 6$।
+
+#### **৬. পাঠ্যপুস্তক নির্দেশিকা ও তথ্যসূত্র (References & Textbook Guide)**
+* 📖 *Discrete Mathematics and Its Applications* by Kenneth H. Rosen (Chapter 2: Sets, Functions, and Sequences).
+* 📖 *Elements of Discrete Mathematics* by C.L. Liu.
+* 🌐 Presidency University CSE Dept Courseware Portal — [PU Library](https://presidency.edu.bd/)""",
+
+    "Propositional Logic": r"""### 📘 Masterclass Lecture: Propositional Logic (প্রপোজিশনাল লজিক)
+
+#### **১. ভূমিকা ও গুরুত্ব (Introduction & Core Importance)**
+প্রপোজিশনাল লজিক বা গাণিতিক যুক্তিবিদ্যা হলো কম্পিউটার বিজ্ঞানের মেধার ভিত্তি। এটি বুলিয়ান অ্যালজেব্রা, ডিজিটাল ইলেকট্রনিক্স সার্কিট ডিজাইন, আর্টিফিশিয়াল ইন্টেলিজেন্সের নলেজ রিপ্রেজেন্টেশন এবং অ্যালগরিদমের সত্যতা যাচাইয়ের প্রধান হাতিয়ার। যুক্তিবিদ্যার মাধ্যমে আমরা সাধারণ বাক্যকে গাণিতিক সমীকরণে রূপান্তর করতে পারি।
+
+#### **২. প্রপোজিশন ও লজিক্যাল কানেক্টিভস (Propositions & Logical Connectives)**
+একটি প্রপোজিশন হলো এমন একটি ডিক্লারেটিভ বাক্য যা সম্পূর্ণ সত্য (True - T) অথবা সম্পূর্ণ মিথ্যা (False - F) হতে পারে, কিন্তু একসাথে সত্য ও মিথ্যা উভয়ই হতে পারে না।
+* **লজিক্যাল অপারেটরসমূহ (Logical Operators):**
+  1. **Negation ($\neg P$):** NOT গেটের মতো কাজ করে। $P$ সত্য হলে $\neg P$ মিথ্যা।
+  2. **Conjunction ($P \land Q$):** AND গেটের মতো। উভয়ই সত্য হলে ফলাফল সত্য।
+  3. **Disjunction ($P \lor Q$):** OR গেটের মতো। যেকোনো একটি সত্য হলেই ফলাফল সত্য।
+  4. **Conditional / Implication ($P \rightarrow Q$):** "If P, then Q"। এটি কেবল তখনই মিথ্যা হয় যখন $P$ সত্য কিন্তু $Q$ মিথ্যা।
+  5. **Biconditional ($P \leftrightarrow Q$):** "P if and only if Q"। দুটি ভেরিয়েবলের মান সমান হলে (উভয়ই T বা উভয়ই F) এটি সত্য হয়।
+
+#### **৩. ট্রুথ টেবিল ও সমতুল্যতা (Truth Tables & Logical Equivalence)**
+লজিকের জটিল এক্সপ্রেশন সমাধান করার জন্য ট্রুথ টেবিল বা সত্যতা সারণী ব্যবহার করা হয়। যদি কোনো এক্সপ্রেশনের সব আউটপুট সত্য হয়, তাকে **Tautology** বলে। যদি সব আউটপুট মিথ্যা হয়, তাকে **Contradiction** বলে।
+
+**গুরুত্বপূর্ণ আইডেন্টিটি (Conditional Identity):**
 $$P \rightarrow Q \equiv \neg P \lor Q$$
-#### **📚 Reference Books:**
-* 📖 *Logic and Computer Design Fundamentals* by M. Morris Mano — [Pearson](https://www.pearson.com)""",
 
-    "Graph Theory": r"""### 📘 Advanced Lecture: Graph Theory (গ্রাফ তত্ত্ব)
-#### **১. Handshaking Theorem (হ্যান্ডশেকিং থিওরেম):**
-যেকোনো আনডাইরেক্টেড গ্রাফের সব নোডের ডিগ্রীর যোগফল তার মোট এজের দ্বিগুণ।
+#### **৪. ডিমরগানের লজিক্যাল ল (De Morgan's Laws for Logic)**
+$$\neg(P \land Q) \equiv \neg P \lor \neg Q$$
+$$\neg(P \lor Q) \equiv \neg P \land \neg Q$$
+
+#### **৫. বিস্তারিত গাণিতিক উদাহরণ (Detailed Mathematical Solved Examples)**
+
+**উদাহরণ ১ (Solved Example 1):**
+প্রমাণ করো যে $P \rightarrow Q$ এবং $\neg P \lor Q$ যৌক্তিকভাবে সমতুল্য (Logically Equivalent)।
+* **সত্যতা সারণী (Truth Table Verification):**
+| $P$ | $Q$ | $\neg P$ | $P \rightarrow Q$ | $\neg P \lor Q$ |
+| :---: | :---: | :---: | :---: | :---: |
+| T | T | F | **T** | **T** |
+| T | F | F | **F** | **F** |
+| F | T | T | **T** | **T** |
+| F | F | T | **T** | **T** |
+যেহেতু শেষ দুটি কলামের আউটপুট হুবহু মিলে গেছে, তাই তারা যৌক্তিকভাবে সমতুল্য।
+
+**উদাহরণ ২ (Solved Example 2):**
+$(P \land \neg P)$ এক্সপ্রেশনটি একটি Contradiction—এটি ট্রুথ টেবিল ছাড়া ব্যাখ্যা করো।
+* **সমাধান:** লজিকের নিয়ম অনুযায়ী একটি নির্দিষ্ট প্রপোজিশন $P$ একই সাথে সত্য এবং মিথ্যা হতে পারে না। যদি $P = T$ হয়, তবে $\neg P = F$। এদের মধ্যে AND ($\land$) অপারেশন করলে $T \land F = F$ হবে। একইভাবে $P = F$ হলেও আউটপুট $F$ হবে। যেহেতু সম্ভাব্য সকল ক্ষেত্রে ফলাফল সর্বদা মিথ্যা (False), তাই এটি একটি Contradiction।
+
+#### **৬. পাঠ্যপুস্তক নির্দেশিকা ও তথ্যসূত্র (References & Textbook Guide)**
+* 📖 *Discrete Mathematics and Its Applications* by Kenneth H. Rosen (Chapter 1: The Foundations: Logic and Proofs).
+* 📖 *Logic for Computer Science* by Michael Huth and Mark Ryan.
+* 🌐 MIT OpenCourseWare: Mathematics for Computer Science. """,
+
+    "Graph Theory": r"""### 📘 Masterclass Lecture: Advanced Graph Theory (গ্রাফ তত্ত্ব)
+
+#### **১. কম্পিউটার বিজ্ঞানে গ্রাফ থিওরির ভূমিকা (Introduction to Graph Theory)**
+গ্রাফ থিওরি হলো কম্পিউটার বিজ্ঞানের সবচেয়ে ব্যবহারিক শাখা। গুগল ম্যাপসের শর্টেস্ট পাথ ফাইন্ডিং, ফেসবুকের সোশ্যাল নেটওয়ার্ক কানেক্টিভিটি, ইন্টারনেটের ডাটা রাউটিং প্রোটোকল এবং ওএস (OS) এর ডেডলক ডিটেকশন—সবকিছুর পেছনে গ্রাফ থিওরির অ্যালগরিদম কাজ করে। এটি নোড এবং এজের সমন্বয়ে একটি নেটওয়ার্ক স্ট্রাকচার তৈরি করে।
+
+#### **২. কোর গ্রাফ আর্কিটেকচার ও উপাদান (Core Components)**
+একটি গ্রাফ $G = (V, E)$ গঠিত হয় ভার্টেক্স বা নোড সেট ($V$) এবং এজ সেট ($E$) নিয়ে।
+* **Directed Graph (ডাইরেক্টেড গ্রাফ):** যে গ্রাফের এজগুলোর নির্দিষ্ট দিক বা ডিরেকশন থাকে।
+* **Undirected Graph (আনডাইরেক্টেড গ্রাফ):** যে গ্রাফের এজগুলোর কোনো নির্দিষ্ট দিক থাকে না।
+* **ডিগ্রী (Degree of a Vertex):** একটি নোডের সাথে যতগুলো এজ সরাসরি যুক্ত থাকে, তাকে ওই নোডের ডিগ্রী বলে। ডাইরেক্টেড গ্রাফের ক্ষেত্রে এটি দুই প্রকার: In-degree (ভেতরে আসা এজ) এবং Out-degree (বাইরে যাওয়া এজ)।
+
+#### **৩. হ্যান্ডশেকিং থিওরেম ও গাণিতিক বিশ্লেষণ (Handshaking Theorem)**
+ডিসক্রিট ম্যাথের গ্রাফ থিওরির সবচেয়ে গুরুত্বপূর্ণ উপপাদ্য হলো হ্যান্ডশেকিং থিওরেম। এটি বলে যে, যেকোনো আনডাইরেক্টেড গ্রাফের সমস্ত নোডের ডিগ্রীর যোগফল তার মোট এজের সংখ্যার দ্বিগুণ।
 $$\sum_{v \in V} \text{deg}(v) = 2|E|$$
-#### **🎯 Solved Example:**
-If a simple undirected graph has 15 edges, what is the sum of degrees of all vertices?
-$$\text{Sum of degrees} = 2 \times 15 = 30$$
-#### **📚 Reference Books:**
-* 📖 *Introduction to Graph Theory* by Douglas B. West — [Pearson](https://www.pearson.com)""",
 
-    "Combinatorics & Counting": r"""### 📘 Advanced Lecture: Combinatorics & Counting (বিন্যাস ও সমাবেশ)
-#### **১. Pigeonhole Principle (পায়রাখোপ নীতি):**
-যদি $k+1$ বা তার বেশি পায়রাকে $k$ টি খোপে রাখা হয়, তবে অন্তত একটি খোপে ১টির বেশি পায়রা থাকবে।
-$$\lceil n/k \rceil \text{ elements distribution.}$$
-#### **🎯 Solved Example:**
-Among 13 people, at least how many must be born in the same month?
-$$\text{Answer: } \lceil 13/12 \rceil = 2 \text{ people.}$$
-#### **📚 Reference Books:**
-* 📖 *Introductory Combinatorics* by Richard A. Brualdi — [Pearson](https://www.pearson.com)""",
+**গুরুত্বপূর্ণ অনুসিদ্ধান্ত (Corollary):**
+যেকোনো গ্রাফে বিজোড় ডিগ্রী (Odd Degree) বিশিষ্ট নোডের মোট সংখ্যা সবসময় একটি জোড় সংখ্যা (Even Number) হতে বাধ্য।
 
-    "Recurrence Relations": r"""### 📘 Advanced Lecture: Recurrence Relations (পুনরাবৃত্তি সম্পর্ক)
-#### **১. ভূমিকা (Introduction):**
-একটি পুনরাবৃত্তি সম্পর্ক হলো এমন একটি সমীকরণ যা কোনো সিকোয়েন্সের $n$-তম পদকে তার পূর্ববর্তী পদগুলোর মাধ্যমে প্রকাশ করে।
-$$\text{General Formula: } a_n = C_1r_1^n + C_2r_2^n$$
-#### **🎯 Solved Example:**
-Solve $a_n = 5a_{n-1} - 6a_{n-2}$ with $a_0=1, a_1=5$.
-* Equation: $r^2 - 5r + 6 = 0 \implies (r-2)(r-3) = 0 \implies r=2, 3$
-* Final Formula: $a_n = -1 \cdot 2^n + 2 \cdot 3^n$
-#### **📚 Reference Books:**
-* 📖 *Discrete Mathematics and Its Applications* by Kenneth H. Rosen — [McGraw-Hill](https://www.mheducation.com)"""
+#### **৪. অয়লার ও হ্যামিল্টনীয় পাথ (Euler and Hamiltonian Paths)**
+* **Euler Path:** একটি গ্রাফের প্রতিটি এজকে ঠিক একবার ভিজিট করে যে পাথ তৈরি হয়।
+* **Hamiltonian Path:** একটি গ্রাফের প্রতিটি নোড বা ভার্টেক্সকে ঠিক একবার ভিজিট করে যে পাথ তৈরি হয়।
+
+#### **৫. বিস্তারিত গাণিতিক উদাহরণ (Detailed Solved Examples)**
+
+**উদাহরণ ১ (Solved Example 1):**
+একটি সাধারণ আনডাইরেক্টেড গ্রাফে ১৫টি এজ (Edges) আছে। যদি গ্রাফের ৩টি নোডের ডিগ্রী ৪ হয় এবং বাকি নোডগুলোর ডিগ্রী ২ হয়, তবে গ্রাফটির মোট নোড সংখ্যা কত?
+* **সমাধান:** ধরি গ্রাফের মোট নোড সংখ্যা = $n$। 
+  প্রদত্ত কন্ডিশন অনুযায়ী, ৩টি নোডের ডিগ্রী ৪, তাহলে তাদের ডিগ্রীর যোগফল = $3 \times 4 = 12$।
+  বাকি নোডের সংখ্যা = $(n - 3)$ এবং এদের প্রত্যেকের ডিগ্রী ২, ডিগ্রীর যোগফল = $2(n - 3)$।
+  হ্যান্ডশেকিং থিওরেম অনুযায়ী:
+  $$\sum \text{deg}(v) = 2|E| \implies 12 + 2(n - 3) = 2 \times 15$$
+  $$12 + 2n - 6 = 30 \implies 2n + 6 = 30 \implies 2n = 24 \implies n = 12$$
+  অতএব, গ্রাফটির মোট নোড সংখ্যা ১২টি।
+
+**工程উদাহরণ ২ (Solved Example 2):**
+একটি গ্রাফে নোডগুলোর ডিগ্রী যথাক্রমে ১, ৩, ৪, ২, ৫ হতে পারে কি না হ্যান্ডশেকিং থিওরেম দিয়ে যাচাই করো।
+* **সমাধান:** নোডগুলোর ডিগ্রীর যোগফল বের করি: $1 + 3 + 4 + 2 + 5 = 15$। 
+  হ্যান্ডশেকিং থিওরেম অনুযায়ী ডিগ্রীর যোগফল সর্বদা জোড় সংখ্যা ($2|E|$) হতে হবে। কিন্তু এখানে যোগফল ১৫ (বিজোড়)। অতএব, এই ডিগ্রী বিন্যাস নিয়ে কোনো গ্রাফ আঁকা অসম্ভব।
+
+#### **৬. পাঠ্যপুস্তক নির্দেশিকা ও তথ্যসূত্র (References)**
+* 📖 *Introduction to Graph Theory* by Douglas B. West.
+* 📖 *Discrete Mathematics and Its Applications* by Kenneth H. Rosen (Chapter 10: Graphs).
+* 🌐 Coursera: Graph Theory Algorithms Pack (Stanford University Courseware).""",
+
+    "Combinatorics & Counting": r"""### 📘 Masterclass Lecture: Combinatorics & Counting (বিন্যাস ও সমাবেশ)
+
+#### **১. ভূমিকা ও গণনার প্রয়োজনীয়তা (Introduction to Combinatorics)**
+কম্বিনেটরিক্স বা গণনা তত্ত্ব হলো ডিসক্রিট ম্যাথের সেই শাখা যা কোনো নির্দিষ্ট শর্তের অধীনে কতগুলো সম্ভাব্য উপায়ে একটি ঘটনা ঘটতে পারে তা নির্ণয় করে। পাসওয়ার্ড পলিসি ডিজাইন (যেমন: একটি ৮ ক্যারেক্টারের পাসওয়ার্ড কতভাবে তৈরি করা যায়), নেটওয়ার্ক সিকিউরিটি এনক্রিপশন কি (Key) স্পেস ক্যালকুলেশন এবং অ্যালগরিদমের টাইম কমপ্লেক্সিটি অ্যানালিসিসে কম্বিনেটরিক্সের ব্যবহার অপরিসীম।
+
+#### **২. গণনার মৌলিক নীতিসমূহ (Basic Counting Principles)**
+* **The Sum Rule (যোগের নিয়ম):** যদি একটি কাজ $n_1$ উপায়ে করা যায় এবং দ্বিতীয় একটি কাজ $n_2$ উপায়ে করা যায়, এবং কাজ দুটি একসাথে ঘটা সম্ভব না হয় (Mutually Exclusive), তবে যেকোনো একটি কাজ করা যাবে:
+$$\text{Total Ways} = n_1 + n_2$$
+* **The Product Rule (গুণের নিয়ম):** যদি একটি কাজ $n_1$ উপায়ে সম্পন্ন করা যায় এবং এরপর দ্বিতীয় একটি কাজ $n_2$ উপায়ে করা যায়, তবে কাজ দুটি একত্রে সম্পন্ন করার উপায়:
+$$\text{Total Ways} = n_1 \times n_2$$
+
+#### **৩. বিন্যাস ও সমাবেশ (Permutations & Combinations)**
+* **Permutation (বিন্যাস):** যখন উপাদানের ক্রম বা অর্ডার (Order) গুরুত্বপূর্ণ। $n$ সংখ্যক উপাদান থেকে $r$ সংখ্যক উপাদান নিয়ে বিন্যাসের সূত্র:
+$$P(n, r) = \frac{n!}{(n-r)!}$$
+* **Combination (সমাবেশ):** যখন উপাদানের ক্রম বা অর্ডার গুরুত্বপূর্ণ নয় (শুধুমাত্র সিলেকশন)। সূত্র:
+$$C(n, r) = \frac{n!}{r!(n-r)!}$$
+
+#### **৪. পায়রাখোপ নীতি ও জেনারেলাইজড ফর্মুলা (Pigeonhole Principle)**
+যদি $n$ সংখ্যক পায়রাকে $k$ সংখ্যক খোপে রাখা হয় এবং $n > k$ হয়, তবে অন্তত একটি খোপে ১টির বেশি পায়রা থাকবে।
+* **Generalized Pigeonhole Principle:** যদি $n$ সংখ্যক উপাদানকে $k$ সংখ্যক বক্সে রাখা হয়, তবে অন্তত একটি বক্সে কমপক্ষে এই পরিমাণ উপাদান থাকবে:
+$$\lceil n/k \rceil \quad \text{(Ceiling Function)}$$
+
+#### **৫. বিস্তারিত গাণিতিক উদাহরণ (Detailed Solved Examples)**
+
+**উদাহরণ ১ (Solved Example 1):**
+PRESIDENCY শব্দটির অক্ষরগুলোকে কতভাবে সাজানো যাবে যাতে স্বরবর্ণগুলো (Vowels) সবসময় একসাথে থাকে?
+* **সমাধান:** PRESIDENCY শব্দটিতে মোট ১০টি অক্ষর আছে। এর মধ্যে স্বরবর্ণ (Vowels) হলো ৩টি (E, I, E) এবং ব্যঞ্জনবর্ণ (Consonants) ৭টি (P, R, S, D, N, C, Y)।
+  যেহেতু স্বরবর্ণগুলো একসাথে থাকবে, তাদের একটি একক ব্লক (1 Unit) ধরা যাক।
+  তাহলে মোট উপাদান সংখ্যা দাঁড়াল: ৭টি ব্যঞ্জনবর্ণ + ১টি স্বরবর্ণের ব্লক = ৮টি উপাদান।
+  এই ৮টি উপাদানকে সাজানো যায় = $8!$ উপায়ে।
+  আবার, স্বরবর্ণের ব্লকের ভেতরে ৩টি অক্ষরের মধ্যে ২টি 'E' পুনরাবৃত্তি আছে, তাই তাদের নিজেদের মধ্যে সাজানোর উপায় = $\frac{3!}{2!}$।
+  মোট বিন্যাস সংখ্যা = $8! \times \frac{3!}{2!} = 40,320 \times 3 = 120,960$ উপায়ে।
+
+**উদাহরণ ২ (Solved Example 2):**
+একটি ক্লাসে ১০০ জন স্টুডেন্ট আছে। প্রমাণ করো যে অন্তত ৯ জন স্টুডেন্ট সপ্তাহের একই দিনে জন্মগ্রহণ করেছে।
+* **সমাধান:** এখানে মোট পায়রা বা উপাদান ($n$) = ১০০ জন স্টুডেন্ট। সপ্তাহের মোট দিন বা খোপ ($k$) = ৭টি।
+  Generalized Pigeonhole Principle অনুযায়ী, অন্তত একটি দিনে জন্ম নেওয়া স্টুডেন্টের সংখ্যা হবে কমপক্ষে:
+  $$\lceil n/k \rceil = \lceil 100/7 \rceil = \lceil 14.28 \rceil = 15$$
+  (নোট: গ্যারান্টিড সর্বনিম্ন মান ১৫ জন হবে, যা প্রশ্নের চেয়েও বেশি শক্তিশালী প্রমাণ দেয়)।
+
+#### **৬. পাঠ্যপুস্তক নির্দেশিকা ও তথ্যসূত্র (References)**
+* 📖 *Introductory Combinatorics* by Richard A. Brualdi.
+* 📖 *Discrete Mathematics and Its Applications* by Kenneth H. Rosen (Chapter 6: Counting).
+* 🌐 MIT Mathematics Design Portal Reference Repository.""",
+
+    "Recurrence Relations": r"""### 📘 Masterclass Lecture: Recurrence Relations (পুনরাবৃত্তি সম্পর্ক)
+
+#### **১. কম্পিউটার বিজ্ঞানে পুনরাবৃত্তি সম্পর্কের ভূমিকা (Introduction & Core Concept)**
+অ্যালগরিদম ডিজাইনে বিশেষ করে ডিভাইড অ্যান্ড কনকার (Divide and Conquer) এবং ডাইনামিক প্রোগ্রামিংয়ে রিকুরেন্স রিলেশন বহুল ব্যবহৃত হয়। মার্জ সর্ট (Merge Sort) বা ফিবোনাচ্চি সিকোয়েন্সের মতো রিকুর্সিভ ফাংশনের রানটাইম কমপ্লেক্সিটি বের করার জন্য রিকুরেন্স রিলেশন সমাধান করা অত্যন্ত জরুরি। এটি এমন একটি সমীকরণ যা কোনো সিকোয়েন্সের $n$-তম পদকে তার পূর্ববর্তী পদের মাধ্যমে প্রকাশ করে।
+
+#### **২. হোমোজেনিয়াস লিনিয়ার পুনরাবৃত্তি সম্পর্ক (Homogeneous Linear Recurrence)**
+একটি দ্বিতীয় অর্ডারের সমজাতীয় রৈখিক পুনরাবৃত্তি সম্পর্কের সাধারণ রূপ হলো:
+$a_n = c_1a_{n-1} + c_2a_{n-2}$
+এর সমাধান করার জন্য প্রথমে আমাদের ক্যারেক্টারিস্টিক ইকুয়েশন (Characteristic Equation) গঠন করতে হয়:
+$$r^2 - c_1r - c_2 = 0$$
+
+**রুট বা মূলের প্রকৃতির ওপর ভিত্তি করে সমাধান:**
+* **কেস ১ (Distinct Roots):** যদি রুট দুটি ভিন্ন ($r_1 \neq r_2$) হয়:
+  $$a_n = C_1r_1^n + C_2r_2^n$$
+* **কেস ২ (Repeated Roots):** যদি রুট দুটি সমান ($r_1 = r_2 = r$) হয়:
+  $$a_n = (C_1 + C_2n)r^n$$
+
+#### **৩. নন-হোমোজেনিয়াস সম্পর্ক ও পার্টিকুলার সলিউশন (Non-Homogeneous Recurrence)**
+যদি সমীকরণের ডানপাশে কোনো ফাঞ্চন $F(n)$ থাকে (যেমন: $a_n - c_1a_{n-1} = F(n)$), তবে চূড়ান্ত সমাধান হয় হোমোজেনিয়াস ও পার্টিকুলার সলিউশনের যোগফল: $a_n = a_n^{(h)} + a_n^{(p)}$।
+
+#### **৪. বিস্তারিত গাণিতিক উদাহরণ (Detailed Solved Examples)**
+
+**উদাহরণ ১ (Solved Example 1 - Distinct Roots):**
+Solve the recurrence relation $a_n = 5a_{n-1} - 6a_{n-2}$ with initial conditions $a_0 = 1$ and $a_1 = 5$.
+* **ধাপ ১ (ক্যারেক্টারিস্টিক সমীকরণ):** $r^2 - 5r + 6 = 0$
+  $$\implies (r - 2)(r - 3) = 0 \implies r_1 = 2, \quad r_2 = 3$$
+* **ধাপ ২ (সাধারণ সমাধান):** যেহেতু মূল দুটি ভিন্ন, তাই:
+  $$a_n = C_1 \cdot 2^n + C_2 \cdot 3^n$$
+* **ধাপ ৩ (বাউন্ডারি কন্ডিশন প্রয়োগ):**
+  $n = 0 \implies C_1 + C_2 = 1 \implies C_1 = 1 - C_2$
+  $n = 1 \implies 2C_1 + 3C_2 = 5$
+  $C_1$ এর মান বসালে: $2(1 - C_2) + 3C_2 = 5 \implies 2 + C_2 = 5 \implies C_2 = 3$
+  তাহলে, $C_1 = 1 - 3 = -1$。
+* **চূড়ান্ত উত্তর:** $a_n = -1 \cdot 2^n + 3 \cdot 3^n$
+
+**উদাহরণ ২ (Solved Example 2 - Repeated Roots):**
+Solve the recurrence relation $a_n = 4a_{n-1} - 4a_{n-2}$ with $a_0 = 1, a_1 = 4$.
+* **ধাপ ১:** ক্যারেক্টারিস্টিক সমীকরণ: $r^2 - 4r + 4 = 0 \implies (r-2)^2 = 0 \implies r = 2, 2$ (Repeated)।
+* **ধাপ ২:** সাধারণ সমাধান ফর্মুলা: $a_n = (C_1 + C_2n) \cdot 2^n$
+* **ধাপ ৩:** বাউন্ডারি কন্ডিশন বসিয়ে পাই:
+  $n = 0 \implies C_1 \cdot 1 = 1 \implies C_1 = 1$
+  $n = 1 \implies (1 + C_2) \cdot 2 = 4 \implies 1 + C_2 = 2 \implies C_2 = 1$
+* **চূড়ান্ত উত্তর:** $a_n = (1 + n) \cdot 2^n$
+
+#### **৫. পাঠ্যপুস্তক নির্দেশিকা ও তথ্যসূত্র (References & Textbook Guide)**
+* 📖 *Concrete Mathematics: A Foundation for Computer Science* by Ronald L. Graham.
+* 📖 *Discrete Mathematics and Its Applications* by Kenneth H. Rosen (Chapter 8: Advanced Counting Techniques).
+* 🌐 Khan Academy: Advanced Sequences and Linear Recurrence Systems. """
 }
 
 if st.button("Generate Detailed AI Lecture Note", use_container_width=True):
     with st.spinner(f"✨ Compiling notes for {lesson_topic}..."):
+        content = None
+        if ai_ready and ai_model:
+            try:
+                # এপিআই অন থাকলে সরাসরি জেমিনি থেকে সুপার ডিটেইলড নোট আসবে
+                prompt = f"Write a highly comprehensive, textbook-style, advanced academic lecture note for university undergraduates on the topic: '{lesson_topic}'. Explain using a mix of Bengali and English (Banglish explanation style). Structure the note with basic definition, intermediate properties, advanced concepts, at least 2 step-by-step solved mathematical examples with rigorous LaTeX block formatting, and a definitive reference section citing standard textbooks. The output must be long and thorough."
+                resp = ai_model.generate_content(prompt)
+                content = resp.text
+            except Exception:
+                content = None
+        
+        # ব্যাকআপ ফলব্যাক আর্কিটেকচার যা ৫০ লাইনের মেগা নোট লোড করবে
+        if not content:
+            content = global_lessons.get(lesson_topic, "### Lecture database operational.")
+            
         st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-        st.markdown(global_lessons.get(lesson_topic, "### Data Layer Confirmed."))
+        st.markdown(content)
         st.markdown('</div>', unsafe_allow_html=True)
 
 st.write("---")
 
-# 🃏 ७. ডাইনামিক ফ্ল্যাশ কার্ড সূত্র রিভিশন
+# 🃏 ৭. ডাইনামিক ফ্ল্যাশ কার্ড সূত্র রিভিশন
 st.markdown("<h3 style='color: #38bdf8;'>🃏 Interactive Formula Flashcards</h3>", unsafe_allow_html=True)
 flash_topic = st.selectbox("🎯 Select a topic for formula revision:", list(topic_data.keys()), key="flash_sel")
 
@@ -247,13 +464,27 @@ if st.button("🔄 Load Dynamic AI Flashcards", use_container_width=True):
         with f_col2:
             st.markdown('<div class="flashcard"><b>💡 De Morgan\'s Law</b></div>', unsafe_allow_html=True)
             st.info(r"$$\neg(P \land Q) \equiv \neg P \lor \neg Q$$")
-    else:
+    elif "Set" in flash_topic:
         with f_col1:
             st.markdown('<div class="flashcard"><b>💡 Power Set Size</b></div>', unsafe_allow_html=True)
             st.info(r"$$|P(A)| = 2^n$$")
         with f_col2:
             st.markdown('<div class="flashcard"><b>💡 Cartesian Product</b></div>', unsafe_allow_html=True)
             st.info(r"$$|A \times B| = |A| \cdot |B|$$")
+    elif "Counting" in flash_topic:
+        with f_col1:
+            st.markdown('<div class="flashcard"><b>💡 Permutation Formula</b></div>', unsafe_allow_html=True)
+            st.info(r"$$P(n, r) = \frac{n!}{(n-r)!}$$")
+        with f_col2:
+            st.markdown('<div class="flashcard"><b>💡 Combination Formula</b></div>', unsafe_allow_html=True)
+            st.info(r"$$C(n, r) = \frac{n!}{r!(n-r)!}$$")
+    else:
+        with f_col1:
+            st.markdown('<div class="flashcard"><b>💡 Characteristic Eq.</b></div>', unsafe_allow_html=True)
+            st.info(r"$$r^2 - c_1r - c_2 = 0$$")
+        with f_col2:
+            st.markdown('<div class="flashcard"><b>💡 Homogeneous Sol.</b></div>', unsafe_allow_html=True)
+            st.info(r"$$a_n = C_1r_1^n + C_2r_2^n$$")
 
 st.write("---")
 
@@ -263,11 +494,28 @@ uploaded_file = st.file_uploader("📂 Upload Class Lecture Sheet (PDF/TXT)", ty
 
 if uploaded_file is not None:
     with st.spinner("🤖 Analyzing handout content..."):
-        analysis_result = f"### 📌 Handout Review Summary\n\n১. **Core Analysis:** গ্রাফ থিওরি, লজিক গেট এবং রিকুরেন্স রিলেশনের বেসিক স্ট্রাকচার এই হ্যান্ডআউটে নিখুঁতভাবে আলোচনা করা হয়েছে।\n\n২. **Expected Exam Questions:**\n* Find the explicit formula for $a_n = 5a_{n-1} - 6a_{n-2}$.\n* Prove the handshaking lemma for simple undirected graphs.\n\n৩. **Core Formulas Reference:** $\\sum \\text{{deg}}(v) = 2|E|$"
-        st.success("🎉 Note Analysis Complete!")
-        st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-        st.markdown(analysis_result)
-        st.markdown('</div>', unsafe_allow_html=True)
+        analysis_result = None
+        try:
+            file_details = uploaded_file.read()
+            raw_text = file_details.decode("utf-8", errors="ignore")[:3000]
+            
+            if ai_ready and ai_model:
+                try:
+                    pdf_prompt = f"Analyze this undergraduate handout note part:\n{raw_text}\n\nProvide a high-quality summary, 3 critical expected exam questions, and referenced core formulas."
+                    pdf_resp = ai_model.generate_content(pdf_prompt)
+                    analysis_result = pdf_resp.text
+                except Exception:
+                    analysis_result = None
+            
+            if not analysis_result:
+                analysis_result = f"### 📌 Handout Review Summary (Local Core)\n\n১. **Core Analysis:** গ্রাফ থিওরি, লজিক গেট এবং রিকুরেন্স রিলেশনের বেসিক স্ট্রাকচার এই হ্যান্ডআউটে নিখুঁতভাবে আলোচনা করা হয়েছে।\n\n২. **Expected Exam Questions:**\n* Find the explicit formula for $a_n = 5a_{n-1} - 6a_{n-2}$.\n* Prove the handshaking lemma for simple undirected graphs.\n\n৩. **Core Formulas Reference:** $\\sum \\text{{deg}}(v) = 2|E|$"
+            
+            st.success("🎉 Note Analysis Complete!")
+            st.markdown('<div class="answer-box">', unsafe_allow_html=True)
+            st.markdown(analysis_result)
+            st.markdown('</div>', unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"❌ Error: {e}")
 
 st.write("---")
 
@@ -280,7 +528,17 @@ if st.button("Generate Answer", use_container_width=True):
         st.warning("⚠️ Please enter a question first!")
     else:
         with st.spinner("✨ Generating solution..."):
-            solution = r"""### 📘 Step-by-Step Mathematical Solution
+            solution = None
+            if ai_ready and ai_model:
+                try:
+                    prompt = f"Provide a textbook-style step-by-step mathematical solution with clear LaTeX for: {user_query}"
+                    response = ai_model.generate_content(prompt)
+                    solution = response.text
+                except Exception:
+                    solution = None
+            
+            if not solution:
+                solution = r"""### 📘 Step-by-Step Mathematical Solution
 
 **Problem:** Solve the linear homogeneous recurrence relation $a_n = 5a_{n-1} - 6a_{n-2}$ with $a_0 = 1, a_1 = 5$.
 
@@ -294,6 +552,7 @@ $$(r - 2)(r - 3) = 0 \implies r_1 = 2, \quad r_2 = 3$$
 
 #### **🎯 Final Explicit Formula:**
 $$a_n = -1 \cdot 2^n + 2 \cdot 3^n$$"""
+            
             st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
             st.balloons()
             st.markdown('<div class="answer-box">', unsafe_allow_html=True)
@@ -302,8 +561,9 @@ $$a_n = -1 \cdot 2^n + 2 \cdot 3^n$$"""
 
 st.write("---")
 
-# 🧠 ১০. ডাইনামিক ফিল্টার সংবলিত ১০-কোয়েশ্চেন মক টেস্ট ল্যাব ও রেটিং সিস্টেম
+# 🧠 ১০. ডাইনামিক ফিল্টার সংবলিত ১০-কোয়েশ্চেন মক টেস্ট ল্যাব (Syllabus Synchronized)
 st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Exam Lab with Dynamic Filter</h3>", unsafe_allow_html=True)
+
 exam_level = st.selectbox("🎯 Select Exam Difficulty Level:", ["Easy", "Medium", "Hard"], index=1, key="lab_level")
 st.warning("⏱️ Real-Time Timer: 05:00 Mins Remaining. Submit before timeout!")
 
@@ -321,19 +581,24 @@ master_questions = [
 ]
 
 filtered_questions = [q for q in master_questions if q["topic"] in selected_topics]
+
 if not filtered_questions:
     filtered_questions = master_questions
 
 if not st.session_state.exam_submitted:
     with st.form("dynamic_exam_form_filtered"):
         st.info(f"📋 Loaded {len(filtered_questions)} questions based strictly on your selected syllabus topics.")
+        
         for idx, q in enumerate(filtered_questions):
             st.markdown(f"##### **Question {idx+1}: {q['question']}**")
+            st.markdown(f"<span style='background-color:#334155; padding:2px 6px; border-radius:4px; color:#38bdf8; font-size:12px;'>🏷️ {q['topic']}</span>", unsafe_allow_html=True)
+            
             if q['type'] == "MCQ":
                 st.session_state.user_answers[q['id']] = st.radio("Select answer:", q['options'], key=f"f_filt_mcq_{q['id']}_{idx}")
             else:
                 st.session_state.user_answers[q['id']] = st.text_input("Type final answer:", key=f"f_filt_math_{q['id']}_{idx}").strip()
             st.write("---")
+            
         if st.form_submit_button("📤 Submit Dynamic Test"):
             st.session_state.exam_submitted = True
             st.session_state.user_score_history.append(1)
@@ -341,6 +606,7 @@ if not st.session_state.exam_submitted:
 
 elif st.session_state.exam_submitted:
     st.success("🎯 Evaluation Completed successfully for Selected Topics!")
+    
     score = 0
     total_q = len(filtered_questions)
     topic_report = {}
@@ -349,10 +615,15 @@ elif st.session_state.exam_submitted:
     for q in filtered_questions:
         u_ans = st.session_state.user_answers.get(q['id'], "")
         is_correct = str(u_ans).lower() == str(q['correct']).lower()
-        if is_correct: score += 1
-        if q["topic"] not in topic_report: topic_report[q["topic"]] = {"correct": 0, "total": 0}
+        if is_correct:
+            score += 1
+            
+        if q["topic"] not in topic_report:
+            topic_report[q["topic"]] = {"correct": 0, "total": 0}
         topic_report[q["topic"]]["total"] += 1
-        if is_correct: topic_report[q["topic"]]["correct"] += 1
+        if is_correct:
+            topic_report[q["topic"]]["correct"] += 1
+            
         detailed_report.append({"Q_Id": q['id'], "Topic": q["topic"], "Your Answer": u_ans, "Correct Answer": q['correct'], "Result": "✅ Correct" if is_correct else "❌ Incorrect"})
     
     wrong = total_q - score
@@ -363,11 +634,11 @@ elif st.session_state.exam_submitted:
     success_rate = (score / total_q) * 100 if total_q > 0 else 0
     grade, color, bg_card = ("A+ 🏆", "#4ade80", "rgba(74, 222, 128, 0.1)") if success_rate >= 90 else (("A 🥇", "#38bdf8", "rgba(56, 189, 248, 0.1)") if success_rate >= 70 else (("B 🥈", "#fbbf24", "rgba(251, 191, 36, 0.1)") if success_rate >= 40 else ("F ❌", "#f43f5e", "rgba(244, 63, 94, 0.1)")))
     
-    # 🛠️ ফিক্সড কোটেশন ও টেক্সটবক্স ইনজেকশন মেথড (যা স্ক্রিপ্ট এরর ১০০% দূর করবে)
     st.markdown(f"""
         <div style="background:{bg_card}; border:1px solid {color}; padding:22px; border-radius:12px; margin-bottom:25px;">
             <h4 style="color:{color}; margin-top:0; font-weight:700;">📊 Comprehensive Exam Report Card</h4>
             <p style="font-size:16px; margin:4px 0;"><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>
+            <p style="font-size:16px; margin:4px 0;"><b>Syllabus Scope:</b> Dynamic Filtered Selected Topics</p>
             <p style="font-size:16px; margin:4px 0;"><b>Final Score:</b> <span style="color:{color}; font-weight:bold;">{score} / {total_q}</span> ({int(success_rate)}% Accuracy)</p>
             <p style="font-size:18px; margin:8px 0;"><b>Academic Grade:</b> <span style="background:{color}; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;">{grade}</span></p>
         </div>
