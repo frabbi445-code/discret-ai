@@ -275,4 +275,79 @@ if st.button("Generate Answer", use_container_width=True):
             sol_prompt = f"Provide a step-by-step mathematical solution with clear LaTeX for: {user_query}"
             solution = generate_ai_response(sol_prompt)
             if not solution:
-                solution = r"""### 📘 Step-by
+                solution = r"""### 📘 Step-by-Step Solution (Local Mode)
+$$r^2 - 5r + 6 = 0 \implies (r - 2)(r - 3) = 0$$
+$$\text{Final Formula: } a_n = -1 \cdot 2^n + 2 \cdot 3^n$$"""
+            
+            st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
+            st.balloons()
+            st.markdown('<div class="answer-box">', unsafe_allow_html=True)
+            st.markdown(solution)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+st.write("---")
+
+# 🧠 ৯. ১০-কোয়েশ্চেন মক টেস্ট ল্যাব (Syllabus Synchronized)
+st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Exam Lab with Dynamic Filter</h3>", unsafe_allow_html=True)
+st.warning("⏱️ Real-Time Timer: 05:00 Mins Remaining.")
+
+master_questions = [
+    {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": "What is the maximum number of edges in a simple undirected graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
+    {"id": 2, "type": "MATH", "topic": "Combinatorics & Counting", "question": "Find the number of distinct permutations of the letters in the word 'PUCSE'.", "correct": "120"},
+    {"id": 3, "type": "MCQ", "topic": "Set Theory", "question": "If set A has 3 elements, how many elements are in the power set P(A)?", "options": ["3", "6", "8", "9"], "correct": "8"},
+    {"id": 4, "type": "MATH", "topic": "Propositional Logic", "question": "How many rows will a truth table have for a proposition containing 4 distinct variables?", "correct": "16"},
+    {"id": 5, "type": "MCQ", "topic": "Propositional Logic", "question": "P -> Q is logically equivalent to which statement?", "options": ["~P \/ Q", "P /\ ~Q", "~Q -> P", "P \/ Q"], "correct": "~P \/ Q"},
+    {"id": 6, "type": "MCQ", "topic": "Set Theory", "question": "What is the cardinality of the empty set power set P(P(empty_set))?", "options": ["0", "1", "2", "4"], "correct": "2"},
+    {"id": 7, "type": "MATH", "topic": "Combinatorics & Counting", "question": "How many bit strings of length 4 either start with a 1 bit or end with 0?", "correct": "12"},
+    {"id": 8, "type": "MCQ", "topic": "Graph Theory", "question": "A graph with no cycles is called what?", "options": ["Bipartite", "Tree/Acyclic", "Complete", "Eulerian"], "correct": "Tree/Acyclic"},
+    {"id": 9, "type": "MATH", "topic": "Recurrence Relations", "question": "Find the next term in the sequence defined by a_n = 2a_{n-1} + 1 with a_0 = 1.", "correct": "3"},
+    {"id": 10, "type": "MCQ", "topic": "Recurrence Relations", "question": "The Fibonacci sequence is defined by which recurrence order?", "options": ["First Order", "Second Order", "Third Order", "None"], "correct": "Second Order"}
+]
+
+filtered_questions = [q for q in master_questions if q["topic"] in selected_topics]
+if not filtered_questions:
+    filtered_questions = master_questions
+
+if not st.session_state.exam_submitted:
+    with st.form("dynamic_exam_form_filtered"):
+        st.info(f"📋 Loaded {len(filtered_questions)} questions based on selected topics.")
+        for idx, q in enumerate(filtered_questions):
+            st.markdown(f"##### **Question {idx+1}: {q['question']}**")
+            st.markdown(f"<span style='background-color:#334155; padding:2px 6px; border-radius:4px; color:#38bdf8; font-size:12px;'>🏷️ {q['topic']}</span>", unsafe_allow_html=True)
+            if q['type'] == "MCQ":
+                st.session_state.user_answers[q['id']] = st.radio("Select answer:", q['options'], key=f"f_mcq_{q['id']}_{idx}")
+            else:
+                st.session_state.user_answers[q['id']] = st.text_input("Type final answer:", key=f"f_math_{q['id']}_{idx}").strip()
+            st.write("---")
+        if st.form_submit_button("📤 Submit Dynamic Test"):
+            st.session_state.exam_submitted = True
+            st.session_state.user_score_history.append(1)
+            st.rerun()
+
+elif st.session_state.exam_submitted:
+    st.success("🎯 Evaluation Completed!")
+    score = 0
+    total_q = len(filtered_questions)
+    detailed_report = []
+    
+    for q in filtered_questions:
+        u_ans = st.session_state.user_answers.get(q['id'], "")
+        is_correct = str(u_ans).lower() == str(q['correct']).lower()
+        if is_correct: score += 1
+        detailed_report.append({"Question": q['question'], "Your Answer": u_ans, "Correct Answer": q['correct'], "Result": "✅ Correct" if is_correct else "❌ Incorrect"})
+    
+    success_rate = (score / total_q) * 100
+    st.markdown(f"""
+        <div style='background:rgba(56, 189, 248, 0.1); border:1px solid #38bdf8; padding:22px; border-radius:12px;'>
+            <h4 style='color:#38bdf8; margin-top:0;'>📊 Exam Report Card</h4>
+            <p><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>
+            <p><b>Final Score:</b> <b>{score} / {total_q}</b> ({int(success_rate)}% Accuracy)</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("🔄 Take Another Test"):
+        st.session_state.exam_submitted = False
+        st.rerun()
+
+st.write("---")
+st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
