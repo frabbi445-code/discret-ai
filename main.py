@@ -76,13 +76,20 @@ final_key = manual_key.strip() if manual_key.strip() else (GEMINI_API_KEY if GEM
 ai_ready = False
 ai_model = None
 connection_error_msg = ""
+used_model_name = ""
 
 if final_key:
     clean_key = str(final_key).strip().replace('"', '').replace("'", "")
     try:
         genai.configure(api_key=clean_key)
-        # লেটেস্ট প্রোডাকশন স্টেবল মডেল
-        model_name = 'gemini-1.5-flash'
+        
+        # ৪MD ফিক্স: AQ কী-র জন্য v1beta 404 এরর বাইপাস করতে ডিরেক্ট মডেল পাথ দেওয়া হলো
+        if clean_key.startswith("AQ"):
+            model_name = 'models/gemini-1.5-flash-latest'
+        else:
+            model_name = 'gemini-1.5-flash'
+            
+        used_model_name = model_name
         ai_model = genai.GenerativeModel(model_name=model_name)
         
         # লাইভ কানেক্টিভিটি টেস্ট পিং কল
@@ -90,14 +97,23 @@ if final_key:
         if test_resp:
             ai_ready = True
     except Exception as e:
-        ai_ready = False
-        connection_error_msg = str(e)
+        # ফার্স্ট ট্রাই ফেইল করলে অল্টারনেটিভ গ্লোবাল মডেলে ফলব্যাক করবে
+        try:
+            model_name = 'models/text-embedding-004' # চেক করার জন্য জেনেরিক এন্ডপয়েন্ট
+            ai_model = genai.GenerativeModel(model_name='models/gemini-1.5-pro-latest')
+            test_resp = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 5})
+            if test_resp:
+                ai_ready = True
+                used_model_name = 'gemini-1.5-pro-latest'
+        except Exception as inner_e:
+            ai_ready = False
+            connection_error_msg = f"Primary Error: {str(e)} | Fallback Error: {str(inner_e)}"
 else:
     connection_error_msg = "No API Key detected in st.secrets or manual input field."
 
 # সবার ওপরে দৃশ্যমান লাইভ ইন্ডিকেটর প্যানেল
 if ai_ready:
-    st.markdown('<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: READY TO PERFORM (gemini-1.5-flash)</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: READY TO PERFORM ({used_model_name})</div>', unsafe_allow_html=True)
 else:
     st.markdown(f'<div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">🔴 Core AI Engine: NOT CONNECTED<br><span style="font-size:12px; font-weight:normal; color:#fda4af !important;">Reason: {connection_error_msg}</span></div>', unsafe_allow_html=True)
 
@@ -198,7 +214,7 @@ if st.button("Generate Answer", use_container_width=True):
                     st.markdown(solution)
                     st.markdown('</div>', unsafe_allow_html=True)
                 else:
-                    st.error("⚠️ Core AI Engine is currently not connected. Please check your API Key in the sidebar or st.secrets.")
+                    st.error("⚠️ Core AI Engine is currently not connected. Please check your API Key.")
                 
             except Exception as e:
                 st.error(f"❌ Core AI Engine Execution Error: {e}")
@@ -302,31 +318,4 @@ elif st.session_state.exam_submitted:
         grade, color, bg_card = "A", "#38bdf8", "rgba(56, 189, 248, 0.1)"
         feedback = f"Excellent job! Your core concepts are highly clear for {exam_level} level problems. Review the minor mistakes to target full marks."
     elif score >= 2:
-        grade, color, bg_card = "B", "#fbbf24", "rgba(251, 191, 36, 0.1)"
-        feedback = f"Moderate performance. There are gaps in your understanding of {exam_level} level topics. We recommend revising your lecture sheets."
-    else:
-        grade, color, bg_card = "F (Fail)", "#f43f5e", "rgba(244, 63, 94, 0.1)"
-        feedback = f"Unsatisfactory score. You need to rebuild your foundational understanding of {exam_level} level concepts. Use the Universal Math Solver to practice more."
-
-    st.markdown(f"""
-        <div style='background:{bg_card}; border:1px solid {color}; padding:20px; border-radius:8px; margin-bottom:25px;'>
-            <h3 style='color:{color}; margin-top:0; font-weight:600;'>📊 Comprehensive Exam Report Card</h3>
-            <p style='font-size:16px; color:#e2e8f0; margin:5px 0;'><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>
-            <p style='font-size:16px; color:#e2e8f0; margin:5px 0;'><b>Exam Level:</b> {exam_level}</p>
-            <p style='font-size:16px; color:#e2e8f0; margin:5px 0;'><b>Final Score:</b> <span style='color:{color}; font-weight:bold;'>{score} / {total_q}</span> ({int(success_rate)}% Accuracy)</p>
-            <p style='font-size:18px; color:#e2e8f0; margin:10px 0;'><b>Grade:</b> <span style='background:{color}; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;'>{grade}</span></p>
-            <hr style='border-color:{color}; opacity:0.2;'>
-            <p style='font-style:italic; color:#cbd5e1; margin-bottom:0;'><b>🗣️ Academic Feedback & Guidance:</b> {feedback}</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    with st.expander("🔍 Detailed Answer Sheet Review"):
-        st.dataframe(pd.DataFrame(detailed_report), use_container_width=True)
-    
-    if st.button("🔄 Take Another AI Test"):
-        st.session_state.exam_submitted = False
-        st.session_state.ai_questions = None
-        st.rerun()
-
-st.write("---")
-st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
+        grade, color, bg_card = "B", "#fbbf2
