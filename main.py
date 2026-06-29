@@ -1,8 +1,7 @@
 import streamlit as st
 import requests
-import time
-import pandas as pd
 import json
+import pandas as pd
 import plotly.graph_objects as go
 
 # ১. পেজ সেটিংস ও উচ্চ-কন্ট্রাস্ট মার্জিত থিম
@@ -60,32 +59,31 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ২. ডাবল-লেয়ার এপিআই কি কনফিগারেশন রুটিন (Secrets + Manual Input)
+# ২. ডাবল-লেয়ার এপিআই কি কনফিগারেশন রুটিন (Hardcoded Provided Key + Secrets + Manual Input)
+# আপনার দেওয়া API Key টি এখানে ডিফল্ট বা হার্ডকোডেড ব্যাকআপ হিসেবে সেট করা হয়েছে
+PROVIDED_API_KEY = "AQ.Ab8RN6L1MJGXMxsE_xp6sbtM01yn3kPMlmYmUlJnTMtnzRv4Lw"
+
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
-    GEMINI_API_KEY = None
+    GEMINI_API_KEY = PROVIDED_API_KEY
 
-# সাইডবারে ব্যাকআপ ম্যানুয়াল এপিআই কী ইনপুট বক্স
+# সাইডবারে ম্যানুয়াল এপিআই কী ইনপুট বক্স (অপশনাল ওভাররাইড)
 st.sidebar.markdown("<h3 style='color: #38bdf8;'>🔑 API Configuration</h3>", unsafe_allow_html=True)
-manual_key = st.sidebar.text_input("Enter Gemini API Key (If offline):", type="password", help="If st.secrets fails, paste your key here.")
+manual_key = st.sidebar.text_input("Enter Gemini API Key (Optional Override):", type="password", help="If the default key fails, paste your key here.")
 
 # যেকোনো একটি কী পেলেই কনফিগারেশন রান করবে
 final_key = manual_key.strip() if manual_key.strip() else (GEMINI_API_KEY if GEMINI_API_KEY else "")
 
 ai_ready = False
 connection_error_msg = ""
-used_gateway = "v1 API Gateway"
+used_gateway = "v1beta API Gateway"
 
-# জেমিনি REST API রিকোয়েস্ট ফাংশন (contents -> parts ডাবল ম্যাপিং ভেরিফাইড)
-def call_gemini_rest(prompt_text, api_key, route_index=1):
-    if route_index == 1:
-        url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=){api_key}"
-    elif route_index == 2:
-        url = f"[https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=){api_key}"
-    else:
-        url = f"[https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=](https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=){api_key}"
-
+# জেমিনি REST API রিকোয়েস্ট ফাংশন (প্রমিত API রুট ও পেলোড ফরম্যাট)
+def call_gemini_rest(prompt_text, api_key):
+    # স্ট্যান্ডার্ড এবং স্টেবল v1beta API এন্ডপয়েন্ট ব্যবহার করা হয়েছে
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    
     headers = {'Content-Type': 'application/json'}
     
     payload = {
@@ -104,29 +102,28 @@ def call_gemini_rest(prompt_text, api_key, route_index=1):
         response = requests.post(url, headers=headers, json=payload, timeout=15)
         if response.status_code == 200:
             res_json = response.json()
-            return res_json['candidates'][0]['content']['parts'][0]['text'], True, route_index
+            # সেফটি ও স্ট্রাকচার ভ্যালিডেশন চেক করে টেক্সট রিটার্ন
+            if 'candidates' in res_json and len(res_json['candidates']) > 0:
+                text_out = res_json['candidates'][0]['content']['parts'][0]['text']
+                return text_out, True
+            else:
+                return "API response block contains no valid text candidates.", False
         else:
-            if route_index < 3:
-                return call_gemini_rest(prompt_text, api_key, route_index = route_index + 1)
-            return f"HTTP {response.status_code} - {response.text}", False, route_index
+            return f"HTTP {response.status_code} - {response.text}", False
     except Exception as exc:
-        if route_index < 3:
-            return call_gemini_rest(prompt_text, api_key, route_index = route_index + 1)
-        return str(exc), False, route_index
+        return str(exc), False
 
 # লাইভ কানেক্টিভিটি ভ্যালিডেশন টেস্ট পিং কল
 if final_key:
     clean_key = str(final_key).strip().replace('"', '').replace("'", "")
-    test_output, is_ok, successful_route = call_gemini_rest("Ping", clean_key, route_index=1)
+    test_output, is_ok = call_gemini_rest("Ping test. Reply with word 'OK' only.", clean_key)
     if is_ok:
         ai_ready = True
-        if successful_route == 1: used_gateway = "v1beta (1.5-flash)"
-        elif successful_route == 2: used_gateway = "v1 (1.5-flash)"
-        else: used_gateway = "v1 (gemini-pro)"
+        used_gateway = "v1beta (Gemini 1.5 Flash)"
     else:
         connection_error_msg = test_output
 else:
-    connection_error_msg = "No API Key detected in st.secrets or manual input field."
+    connection_error_msg = "No API Key detected in secrets, hardcoded variable, or manual input field."
 
 # স্ট্যাটাস প্যানেল রেন্ডারিং
 if ai_ready:
@@ -178,7 +175,7 @@ fig_3d.update_layout(
 st.plotly_chart(fig_3d, use_container_width=True)
 st.write("---")
 
-# Session State ইনিশিয়ালাইজেশন
+# Session State ইনিশিয়ালাইজেশন
 if 'search_history' not in st.session_state:
     st.session_state.search_history = []
 if 'ai_questions' not in st.session_state:
@@ -202,7 +199,7 @@ with st.sidebar.container(border=True):
         st.markdown("<span style='color: #f43f5e; font-weight: bold;'>🔥 Status: OFFLINE</span>", unsafe_allow_html=True)
 
 st.sidebar.write("---")
-st.sidebar.page_link("[https://presidency.edu.bd/](https://presidency.edu.bd/)", label="Presidency University Portal", icon="🏫")
+st.sidebar.page_link("https://presidency.edu.bd/", label="Presidency University Portal", icon="🏫")
 
 # ৪. ইউনিভার্সাল সিঙ্গেল ইনপুট ইন্টারফেস
 st.markdown("<h3 style='color: #38bdf8;'>🚀 Universal Math Input Box</h3>", unsafe_allow_html=True)
@@ -222,9 +219,9 @@ if st.button("Generate Answer", use_container_width=True):
             try:
                 if ai_ready and final_key:
                     clean_key = str(final_key).strip().replace('"', '').replace("'", "")
-                    prompt = f"You are an expert university professor in Discrete Mathematics. Provide a rigorous, step-by-step, textbook-style solution with proper LaTeX formatting for: {user_query}"
+                    prompt = f"You are an expert university professor in Discrete Mathematics. Provide a rigorous, step-by-step, textbook-style solution with proper LaTeX formatting for this user question. Ensure it renders correctly in markdown. Question: {user_query}"
                     
-                    solution, is_ok, _ = call_gemini_rest(prompt, clean_key, route_index=1)
+                    solution, is_ok = call_gemini_rest(prompt, clean_key)
                     
                     if is_ok:
                         st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
@@ -346,14 +343,14 @@ elif st.session_state.exam_submitted:
         feedback = f"Unsatisfactory score. You need to rebuild your foundational understanding of {exam_level} level concepts. Use the Universal Math Solver to practice more."
 
     # পিওর সিঙ্গেল-লাইন অবজেক্ট রেন্ডারিং
-    report_html = '<div style="background:' + bg_card + '; border:1px solid ' + color + '; padding:20px; border-radius:8px; margin-bottom:25px;">'
-    report_html += '<h3 style="color:' + color + '; margin-top:0; font-weight:600;">📊 Comprehensive Exam Report Card</h3>'
-    report_html += '<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>'
-    report_html += '<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Exam Level:</b> ' + exam_level + '</p>'
-    report_html += '<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Final Score:</b> <span style="color:' + color + '; font-weight:bold;">' + str(score) + ' / ' + str(total_q) + '</span> (' + str(int(success_rate)) + '% Accuracy)</p>'
-    report_html += '<p style="font-size:18px; color:#e2e8f0; margin:10px 0;"><b>Grade:</b> <span style="background:' + color + '; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;">' + grade + '</span></p>'
-    report_html += '<hr style="border-color:' + color + '; opacity:0.2;">'
-    report_html += '<p style="font-style:italic; color:#cbd5e1; margin-bottom:0;"><b>🗣️ Academic Feedback & Guidance:</b> ' + feedback + '</p>'
+    report_html = f'<div style="background:{bg_card}; border:1px solid {color}; padding:20px; border-radius:8px; margin-bottom:25px;">'
+    report_html += f'<h3 style="color:{color}; margin-top:0; font-weight:600;">📊 Comprehensive Exam Report Card</h3>'
+    report_html += f'<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>'
+    report_html += f'<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Exam Level:</b> {exam_level}</p>'
+    report_html += f'<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Final Score:</b> <span style="color:{color}; font-weight:bold;">{score} / {total_q}</span> ({int(success_rate)}% Accuracy)</p>'
+    report_html += f'<p style="font-size:18px; color:#e2e8f0; margin:10px 0;"><b>Grade:</b> <span style="background:{color}; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;">{grade}</span></p>'
+    report_html += f'<hr style="border-color:{color}; opacity:0.2;">'
+    report_html += f'<p style="font-style:italic; color:#cbd5e1; margin-bottom:0;"><b>🗣️ Academic Feedback & Guidance:</b> {feedback}</p>'
     report_html += '</div>'
     
     st.markdown(report_html, unsafe_allow_html=True)
