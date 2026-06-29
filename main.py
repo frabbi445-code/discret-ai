@@ -92,9 +92,6 @@ def detect_provider(api_key):
     return "Unknown"
 
 provider = detect_provider(final_key)
-ai_ready = False
-connection_error_msg = ""
-used_gateway = "Not Connected"
 
 # ইউনিভার্সাল REST API কল ফাংশন
 def call_universal_ai(prompt_text, api_key, provider_name):
@@ -126,7 +123,6 @@ def call_universal_ai(prompt_text, api_key, provider_name):
             payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
             try:
                 res = requests.post(url, headers=headers, json=payload, timeout=12)
-                # --- এখানে আগে কোড কাটা ছিল, এখন ঠিক করা হয়েছে ---
                 if res.status_code == 200:
                     return res.json()['candidates'][0]['content']['parts'][0]['text'], True
                 last_error = f"Gemini Error {res.status_code}: {res.text}"
@@ -135,3 +131,36 @@ def call_universal_ai(prompt_text, api_key, provider_name):
         return last_error, False
         
     return "Unsupported or undetected provider", False
+
+# =================================================================
+# ৩. মেইন ইউজার ইন্টারফেস (UI) রেন্ডারিং (যা আগে মিসিং ছিল)
+# =================================================================
+st.title("🧠 DiscreteMind AI")
+st.markdown("Your advanced AI companion for smart reasoning and instant solutions.")
+
+# প্রোভাইডার স্ট্যাটাস দেখানো
+if provider:
+    st.sidebar.success(f"Connected to: {provider}")
+else:
+    st.sidebar.warning("Please provide a valid API key to start.")
+
+# ইউজার ইনপুট ফর্ম
+with st.form("ai_form"):
+    user_prompt = st.text_area("Ask me anything:", placeholder="Type your question or problem here...")
+    submit_button = st.form_submit_button("Generate Response")
+
+# বাটন ক্লিকের পর এপিআই কল করার লজিক
+if submit_button:
+    if not final_key:
+        st.error("🔑 API Key পাওয়া যায়নি! দয়া করে সাইডবারে আপনার চাবি বা Key দিন।")
+    elif not user_prompt.strip():
+        st.warning("⚠️ দয়া করে বক্সে কিছু লিখুন!")
+    else:
+        with st.spinner(f"Processing with {provider if provider else 'AI'}..."):
+            response_text, success = call_universal_ai(user_prompt, final_key, provider)
+            
+            if success:
+                # আপনার সিএসএস দিয়ে ডিজাইন করা সুন্দর সাদা বক্সের ভেতর উত্তর দেখানো
+                st.markdown(f'<div class="answer-box">{response_text}</div>', unsafe_allow_html=True)
+            else:
+                st.error(f"❌ Error occurred: {response_text}")
