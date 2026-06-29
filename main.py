@@ -83,9 +83,10 @@ if final_key:
     try:
         genai.configure(api_key=clean_key)
         
-        # AQ কী-র জন্য নির্দিষ্ট মডেল পাথ অ্যাসাইন
+        # AQ কী-র টোটাল এন্ডপয়েন্ট ফলব্যাক হ্যান্ডলিং
         if clean_key.startswith("AQ"):
-            model_name = "models/gemini-1.5-flash-latest"
+            # প্রথম চয়েস: প্রোডাকশন রেডি নির্দিষ্ট পাথ এন্ডপয়েন্ট
+            model_name = "models/gemini-1.5-flash"
         else:
             model_name = "gemini-1.5-flash"
             
@@ -97,21 +98,30 @@ if final_key:
         if test_resp:
             ai_ready = True
     except Exception as e:
-        # ফার্স্ট ট্রাই ফেইল করলে অল্টারনেティブ এন্ডপয়েন্টে ট্রাই করবে
+        # লেটেস্ট মডেল ফেইল করলে অবধারিত কানেক্টিভিটির জন্য ক্লাসিক প্রুভেন মডেলে ডাইভার্ট করবে
         try:
-            model_name = "models/gemini-1.5-pro-latest"
+            model_name = "models/gemini-pro"
             ai_model = genai.GenerativeModel(model_name=model_name)
             test_resp = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 5})
             if test_resp:
                 ai_ready = True
-                used_model_name = "gemini-1.5-pro-latest"
+                used_model_name = "gemini-pro"
         except Exception as inner_e:
-            ai_ready = False
-            connection_error_msg = f"Primary Error: {str(e)} | Fallback Error: {str(inner_e)}"
+            # সর্বশেষ ট্রাই: আনবক্সড এন্টারপ্রাইজ ভ্যারিয়েন্ট
+            try:
+                model_name = "gemini-1.0-pro"
+                ai_model = genai.GenerativeModel(model_name=model_name)
+                test_resp = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 5})
+                if test_resp:
+                    ai_ready = True
+                    used_model_name = "gemini-1.0-pro"
+            except Exception as ultra_e:
+                ai_ready = False
+                connection_error_msg = f"Flash Error: {str(e)} | Pro Fallback Error: {str(ultra_e)}"
 else:
     connection_error_msg = "No API Key detected in st.secrets or manual input field."
 
-# ট্রিপল কোটেশন ব্যবহার করে স্ট্যাটাস প্যানেলের ভেতরের জটিল কোটেশন বাগ দূর করা হলো
+# স্ট্যাটাস প্যানেল রেন্ডারিং
 if ai_ready:
     status_html = f"""
     <div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">
@@ -335,7 +345,6 @@ elif st.session_state.exam_submitted:
         grade, color, bg_card = "F (Fail)", "#f43f5e", "rgba(244, 63, 94, 0.1)"
         feedback = f"Unsatisfactory score. You need to rebuild your foundational understanding of {exam_level} level concepts. Use the Universal Math Solver to practice more."
 
-    # রিপোর্ট কার্ড জেনারেশনের জন্য ট্রিপল কোটেশন ব্লক ব্যবহার করে কোটেশন কনফ্লিক্ট দূর করা হলো
     report_html = f"""
         <div style="background:{bg_card}; border:1px solid {color}; padding:20px; border-radius:8px; margin-bottom:25px;">
             <h3 style="color:{color}; margin-top:0; font-weight:600;">📊 Comprehensive Exam Report Card</h3>
