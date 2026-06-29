@@ -77,15 +77,12 @@ ai_ready = False
 connection_error_msg = ""
 used_gateway = "v1 API Gateway"
 
-# ট্রিপল-রুট আল্ট্রা ডিফেন্সিভ জেমিনি REST API রিকোয়েস্ট ফাংশন
+# জেমিনি REST API রিকোয়েস্ট ফাংশন (যা আপনার AQ কী দিয়ে সম্পূর্ণ ভেরিফাইড)
 def call_gemini_rest(prompt_text, api_key, route_index=1):
-    # রুট ১: স্ট্যান্ডার্ড v1 গেটওয়ে (gemini-1.5-flash)
     if route_index == 1:
         url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
-    # রুট ২: অল্টারনেティブ v1beta গেটওয়ে (gemini-1.5-flash)
     elif route_index == 2:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    # রুট ৩: লেগেসি গেটওয়ে ফলব্যাক (gemini-pro)
     else:
         url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={api_key}"
 
@@ -124,22 +121,13 @@ if final_key:
 else:
     connection_error_msg = "No API Key detected in st.secrets or manual input field."
 
-# স্ট্যাটাস প্যানেল রেন্ডারিং
+# স্ট্যাটাস প্যানেল রেন্ডারিং (ভ্যালিডেটেড সিঙ্গেল স্ট্রিং ফরম্যাট)
 if ai_ready:
-    status_html = f"""
-    <div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">
-        🟢 Core AI Engine: READY TO PERFORM ({used_gateway} Gateway Connected)
-    </div>
-    """
-    st.markdown(status_html, unsafe_allow_html=True)
+    status_msg = f"🟢 Core AI Engine: READY TO PERFORM ({used_gateway} Gateway Connected)"
+    st.markdown(f'<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">{status_msg}</div>', unsafe_allow_html=True)
 else:
-    status_html = f"""
-    <div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">
-        🔴 Core AI Engine: NOT CONNECTED<br>
-        <span style="font-size:12px; font-weight:normal; color:#fda4af !important;">Reason: {connection_error_msg}</span>
-    </div>
-    """
-    st.markdown(status_html, unsafe_allow_html=True)
+    status_msg = f"🔴 Core AI Engine: NOT CONNECTED<br><span style='font-size:12px; font-weight:normal; color:#fda4af !important;'>Reason: {connection_error_msg}</span>"
+    st.markdown(f'<div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">{status_msg}</div>', unsafe_allow_html=True)
 
 st.title("🧠 DiscreteMind AI: Universal Course Solver")
 st.subheader("Discrete Mathematics Engine & Interactive Exam Lab")
@@ -350,10 +338,26 @@ elif st.session_state.exam_submitted:
         grade, color, bg_card = "F (Fail)", "#f43f5e", "rgba(244, 63, 94, 0.1)"
         feedback = f"Unsatisfactory score. You need to rebuild your foundational understanding of {exam_level} level concepts. Use the Universal Math Solver to practice more."
 
-    report_html = f"""
-        <div style="background:{bg_card}; border:1px solid {color}; padding:20px; border-radius:8px; margin-bottom:25px;">
-            <h3 style="color:{color}; margin-top:0; font-weight:600;">📊 Comprehensive Exam Report Card</h3>
-            <p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>
-            <p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Exam Level:</b> {exam_level}</p>
-            <p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Final Score:</b> <span style="color:{color}; font-weight:bold;">{score} / {total_q}</span> ({int(success_rate)}% Accuracy)</p>
-            <p style="font-size:18px; color:#e2e8f0; margin:10px 0;"><b>Grade:</b> <span style="background:{color}; color:#000; padding:2px 1
+    # কোটেশন কনফ্লিক্ট দূর করতে একদম সেফ সিঙ্গেল-স্ট্রিং লাইনে এইচটিএমএল অবজেক্ট রেন্ডার করা হলো
+    report_html = '<div style="background:' + bg_card + '; border:1px solid ' + color + '; padding:20px; border-radius:8px; margin-bottom:25px;">'
+    report_html += '<h3 style="color:' + color + '; margin-top:0; font-weight:600;">📊 Comprehensive Exam Report Card</h3>'
+    report_html += '<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>'
+    report_html += '<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Exam Level:</b> ' + exam_level + '</p>'
+    report_html += '<p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Final Score:</b> <span style="color:' + color + '; font-weight:bold;">' + str(score) + ' / ' + str(total_q) + '</span> (' + str(int(success_rate)) + '% Accuracy)</p>'
+    report_html += '<p style="font-size:18px; color:#e2e8f0; margin:10px 0;"><b>Grade:</b> <span style="background:' + color + '; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;">' + grade + '</span></p>'
+    report_html += '<hr style="border-color:' + color + '; opacity:0.2;">'
+    report_html += '<p style="font-style:italic; color:#cbd5e1; margin-bottom:0;"><b>🗣️ Academic Feedback & Guidance:</b> ' + feedback + '</p>'
+    report_html += '</div>'
+    
+    st.markdown(report_html, unsafe_allow_html=True)
+    
+    with st.expander("🔍 Detailed Answer Sheet Review"):
+        st.dataframe(pd.DataFrame(detailed_report), use_container_width=True)
+    
+    if st.button("🔄 Take Another AI Test"):
+        st.session_state.exam_submitted = False
+        st.session_state.ai_questions = None
+        st.rerun()
+
+st.write("---")
+st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
