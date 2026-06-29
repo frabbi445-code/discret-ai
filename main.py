@@ -126,4 +126,12 @@ def call_universal_ai(prompt_text, api_key, provider_name):
             payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
             try:
                 res = requests.post(url, headers=headers, json=payload, timeout=12)
-                if res.
+                # --- এখানে আগে কোড কাটা ছিল, এখন ঠিক করা হয়েছে ---
+                if res.status_code == 200:
+                    return res.json()['candidates'][0]['content']['parts'][0]['text'], True
+                last_error = f"Gemini Error {res.status_code}: {res.text}"
+            except Exception as e: 
+                last_error = str(e)
+        return last_error, False
+        
+    return "Unsupported or undetected provider", False
