@@ -7,7 +7,7 @@ import json
 import plotly.graph_objects as go
 from datetime import datetime
 
-# ১. পেজ সেটিংস ও উচ্চ-কন্ট্রাস্ট মার্জিত থিম (High-Contrast Theme)
+# ১. পেজ সেটিংস ও উচ্চ-কন্ট্রাস্ট মার্জিত থিম
 st.set_page_config(page_title="DiscreteMind AI", page_icon="🧠", layout="centered")
 
 st.markdown("""
@@ -145,101 +145,15 @@ st.write("---")
 
 # 🧠 ৫. মডিউল ২: ইউনিভার্সিটি স্ট্যান্ডার্ড মক টেস্ট ইঞ্জিন (MCQ + Math Problems)
 st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>", unsafe_allow_html=True)
-st.caption("💡 Click below to generate 5 real exam-standard questions in English, including critical mathematical calculations.")
+st.caption("💡 Select the exam difficulty level and generate 5 real exam-standard questions in English.")
+
+# 🎯 রিকোয়ারমেন্ট অনুযায়ী ডিফিকাল্টি লেভেল সিলেক্ট করার অপশন যোগ করা হলো
+exam_level = st.selectbox(
+    "🎯 Select Exam Difficulty Level:",
+    ["Easy", "Medium", "Hard"],
+    index=1
+)
 
 if st.button("🔄 Generate New AI Exam Paper", use_container_width=True) or st.session_state.ai_questions is None:
     if ai_model:
-        with st.spinner("🤖 Fetching high-quality exam problems..."):
-            try:
-                # পাইথন সিনট্যাক্স এরর এড়াতে প্রম্পট স্ট্রিংটি একদম সেফ রাখা হলো 
-                quiz_prompt = "Generate exactly 5 university-level Discrete Mathematics exam questions in English. Mix both conceptual MCQs and numerical mathematical problems that require direct numeric answers. Provide the output strictly as a valid raw JSON list of dictionaries containing fields: id, type (MCQ or MATH), topic, question, options (list of strings, empty for MATH), and correct (string representing the correct option or numeric value). Do not include markdown wraps or backticks."
-                response = ai_model.generate_content(quiz_prompt)
-                clean_json = response.text.replace("```json", "").replace("```", "").strip()
-                st.session_state.ai_questions = json.loads(clean_json)
-                st.session_state.user_answers = {}
-                st.session_state.exam_submitted = False
-            except Exception:
-                # ফেইলসেফ ব্যাকআপ কোয়েশ্চেন প্যাক
-                st.session_state.ai_questions = [
-                    {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": "What is the maximum number of edges in a simple graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
-                    {"id": 2, "type": "MATH", "topic": "Combinatorics", "question": "Find the number of distinct permutations of the letters in the word 'PUCSE'.", "options": [], "correct": "120"},
-                    {"id": 3, "type": "MCQ", "topic": "Set Theory", "question": "If set A has 3 elements, how many elements are in the power set P(A)?", "options": ["3", "6", "8", "9"], "correct": "8"},
-                    {"id": 4, "type": "MATH", "topic": "Logic", "question": "How many rows will a truth table have for a proposition containing 4 distinct variables?", "options": [], "correct": "16"},
-                    {"id": 5, "type": "MCQ", "topic": "Relations", "question": "A relation R on set A is reflexive if for all a in A, which condition holds?", "options": ["(a,a) belongs to R", "(a,b) implies (b,a)", "(a,b) and (b,c) implies (a,c)"], "correct": "(a,a) belongs to R"}
-                ]
-    else:
-        # রানটাইম যেন ক্রাশ না করে সেজন্য ব্যাকআপ লোড লজিক
-        st.session_state.ai_questions = [
-            {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": "What is the maximum number of edges in a simple graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
-            {"id": 2, "type": "MATH", "topic": "Combinatorics", "question": "Find the number of distinct permutations of the letters in the word 'PUCSE'.", "options": [], "correct": "120"},
-            {"id": 3, "type": "MCQ", "topic": "Set Theory", "question": "If set A has 3 elements, how many elements are in the power set P(A)?", "options": ["3", "6", "8", "9"], "correct": "8"},
-            {"id": 4, "type": "MATH", "topic": "Logic", "question": "How many rows will a truth table have for a proposition containing 4 distinct variables?", "options": [], "correct": "16"},
-            {"id": 5, "type": "MCQ", "topic": "Relations", "question": "A relation R on set A is reflexive if for all a in A, which condition holds?", "options": ["(a,a) belongs to R", "(a,b) implies (b,a)", "(a,b) and (b,c) implies (a,c)"], "correct": "(a,a) belongs to R"}
-        ]
-
-# মক টেস্ট ফর্ম ইন্টারফেস
-if st.session_state.ai_questions and not st.session_state.exam_submitted:
-    with st.form("dynamic_exam_form"):
-        st.info("⏱️ Exam Regulations: Answer all 5 university-standard questions below. No negative marking.")
-        
-        for q in st.session_state.ai_questions:
-            st.markdown(f"#### **Question {q['id']}: {q['question']}**")
-            st.markdown(f"<span style='background-color:#334155; padding:2px 6px; border-radius:4px; color:#38bdf8; font-size:13px;'>🏷️ {q['topic']} | Type: {q['type']}</span>", unsafe_allow_html=True)
-            
-            if q['type'] == "MCQ":
-                st.session_state.user_answers[q['id']] = st.radio(
-                    "Select your answer:", q['options'], key=f"ai_q_{q['id']}"
-                )
-            else:
-                st.session_state.user_answers[q['id']] = st.text_input(
-                    "Type your numerical/final answer here:", key=f"ai_q_{q['id']}"
-                ).strip()
-            st.write("---")
-            
-        if st.form_submit_button("📤 Submit Mock Test"):
-            st.session_state.exam_submitted = True
-            st.rerun()
-
-elif st.session_state.exam_submitted:
-    st.success("🎯 Evaluation Completed! Check your interactive report below:")
-    
-    score = 0
-    total_q = len(st.session_state.ai_questions)
-    detailed_report = []
-    
-    for q in st.session_state.ai_questions:
-        u_ans = st.session_state.user_answers.get(q['id'], "")
-        is_correct = str(u_ans).lower() == str(q['correct']).lower()
-        if is_correct:
-            score += 1
-        detailed_report.append({
-            "Question": q['question'],
-            "Your Answer": u_ans,
-            "Correct Answer": q['correct'],
-            "Result": "✅ Correct" if is_correct else "❌ Incorrect"
-        })
-            
-    wrong = total_q - score
-    
-    # ডাইনামিক প্লটলি চার্ট
-    fig = go.Figure(data=[go.Pie(
-        labels=['Correct', 'Incorrect'], 
-        values=[score, wrong], 
-        hole=.4,
-        marker_colors=['#4ade80', '#f43f5e']
-    )])
-    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=300)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.metric(label="Final Score", value=f"{score} / {total_q}")
-    
-    with st.expander("🔍 Detailed Answer Sheet Review"):
-        st.dataframe(pd.DataFrame(detailed_report), use_container_width=True)
-    
-    if st.button("🔄 Take Another AI Test"):
-        st.session_state.ai_questions = None
-        st.session_state.exam_submitted = False
-        st.rerun()
-
-st.write("---")
-st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
+        with st.spinner(f"🤖
