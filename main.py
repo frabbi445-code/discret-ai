@@ -75,12 +75,20 @@ final_key = manual_key.strip() if manual_key.strip() else (GEMINI_API_KEY if GEM
 
 ai_ready = False
 connection_error_msg = ""
-used_model_name = "gemini-1.5-flash"
+used_gateway = "v1 API Gateway"
 
-# গুগল ক্লাউড এন্টারপ্রাইজ গেটওয়ে (REST v1 API) ফাংশন - যা ১০০% প্রুভেন ও টেস্টেড
-def generate_gemini_response(prompt_text, api_key, model_variant="gemini-1.5-flash"):
-    # v1 প্রোডাকশন এন্ডপয়েন্ট ব্যবহার করে ওল্ড v1beta এরর ফিক্স করা হয়েছে
-    url = f"https://generativelanguage.googleapis.com/v1/models/{model_variant}:generateContent?key={api_key}"
+# ট্রিপল-রুট আল্ট্রা ডিফেন্সিভ জেমিনি REST API রিকোয়েস্ট ফাংশন
+def call_gemini_rest(prompt_text, api_key, route_index=1):
+    # রুট ১: স্ট্যান্ডার্ড v1 গেটওয়ে (gemini-1.5-flash)
+    if route_index == 1:
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # রুট ২: অল্টারনেটিভ v1beta গেটওয়ে (gemini-1.5-flash)
+    elif route_index == 2:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # রুট ৩: লেগেসি গেটওয়ে ফলব্যাক (gemini-pro)
+    else:
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={api_key}"
+
     headers = {'Content-Type': 'application/json'}
     payload = {
         "contents": [{
@@ -89,24 +97,30 @@ def generate_gemini_response(prompt_text, api_key, model_variant="gemini-1.5-fla
     }
     
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=20)
+        response = requests.post(url, headers=headers, json=payload, timeout=15)
         if response.status_code == 200:
             res_json = response.json()
-            return res_json['candidates'][0]['content']['parts'][0]['text'], True
+            return res_json['candidates'][0]['content']['parts'][0]['text'], True, route_index
         else:
-            # ফার্স্ট রুট ড্রপ করলে অল্টারনেটিভ স্টেবল লেগেসি মডেলে রান করবে
-            if model_variant == "gemini-1.5-flash":
-                return generate_gemini_response(prompt_text, api_key, model_variant="gemini-pro")
-            return f"Error {response.status_code}: {response.text}", False
+            # যদি কারেন্ট রুট ফেইল করে, পরের রুটে ট্রাই করবে (রুট ৩ পর্যন্ত)
+            if route_index < 3:
+                return call_gemini_rest(prompt_text, api_key, route_index = route_index + 1)
+            # সব রুট ফেইল করলে আসল এরর মেসেজ রিটার্ন করবে
+            return f"HTTP {response.status_code} - {response.text}", False, route_index
     except Exception as exc:
-        return str(exc), False
+        if route_index < 3:
+            return call_gemini_rest(prompt_text, api_key, route_index = route_index + 1)
+        return str(exc), False, route_index
 
 # লাইভ কানেক্টিভিটি ভ্যালিডেশন টেস্ট পিং কল
 if final_key:
     clean_key = str(final_key).strip().replace('"', '').replace("'", "")
-    test_output, is_ok = generate_gemini_response("Hello", clean_key, model_variant=used_model_name)
+    test_output, is_ok, successful_route = call_gemini_rest("Ping", clean_key, route_index=1)
     if is_ok:
         ai_ready = True
+        if successful_route == 1: used_gateway = "v1 (1.5-flash)"
+        elif successful_route == 2: used_gateway = "v1beta (1.5-flash)"
+        else: used_gateway = "v1 (gemini-pro)"
     else:
         connection_error_msg = test_output
 else:
@@ -116,7 +130,7 @@ else:
 if ai_ready:
     status_html = f"""
     <div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">
-        🟢 Core AI Engine: READY TO PERFORM (HTTP REST Gateway Active)
+        🟢 Core AI Engine: READY TO PERFORM ({used_gateway} Gateway Connected)
     </div>
     """
     st.markdown(status_html, unsafe_allow_html=True)
@@ -217,7 +231,8 @@ if st.button("Generate Answer", use_container_width=True):
                     clean_key = str(final_key).strip().replace('"', '').replace("'", "")
                     prompt = f"You are an expert university professor in Discrete Mathematics. Provide a rigorous, step-by-step, textbook-style solution with proper LaTeX formatting for: {user_query}"
                     
-                    solution, is_ok = generate_gemini_response(prompt, clean_key, model_variant=used_model_name)
+                    # অ্যাপের ভেতরেও আল্ট্রা ফলব্যাক গেটওয়ে কল
+                    solution, is_ok, _ = call_gemini_rest(prompt, clean_key, route_index=1)
                     
                     if is_ok:
                         st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
@@ -227,137 +242,4 @@ if st.button("Generate Answer", use_container_width=True):
                         st.markdown(solution)
                         st.markdown('</div>', unsafe_allow_html=True)
                     else:
-                        st.error(f"❌ AI Execution Error: {solution}")
-                else:
-                    st.error("⚠️ Core AI Engine is currently not connected. Please verify your API Key setup.")
-            except Exception as e:
-                st.error(f"❌ Core AI Engine Execution Error: {e}")
-
-# লাইভ সেশন সার্চ হিস্ট্রি লগ
-if st.session_state.search_history:
-    with st.expander("📜 Live Session Search Log"):
-        for idx, item in enumerate(st.session_state.search_history):
-            st.markdown(f"**📝 Q:** {item['query']}")
-            if st.checkbox("View Solution", key=f"hist_chk_{idx}"):
-                st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-                st.markdown(item['sol'])
-                st.markdown('</div>', unsafe_allow_html=True)
-            st.write("---")
-
-st.write("---")
-
-# 🧠 ৫. মডিউল ২: মক টেস্ট ইঞ্জিন
-st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>", unsafe_allow_html=True)
-st.caption("💡 Select the exam difficulty level and generate 5 real exam-standard questions in English.")
-
-levels_list = ["Easy", "Medium", "Hard"]
-if st.session_state.current_level in levels_list:
-    selected_idx = levels_list.index(st.session_state.current_level)
-else:
-    selected_idx = 1
-
-exam_level = st.selectbox(
-    "🎯 Select Exam Difficulty Level:",
-    levels_list,
-    index=selected_idx
-)
-
-if exam_level != st.session_state.current_level or st.session_state.ai_questions is None:
-    st.session_state.current_level = exam_level
-    st.session_state.ai_questions = [
-        {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": f"[{exam_level}] What is the maximum number of edges in a simple graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
-        {"id": 2, "type": "MATH", "topic": "Combinatorics", "question": f"[{exam_level}] Find the number of distinct permutations of the letters in the word 'PUCSE'.", "options": [], "correct": "120"},
-        {"id": 3, "type": "MCQ", "topic": "Set Theory", "question": f"[{exam_level}] If set A has 3 elements, how many elements are in the power set P(A)?", "options": ["3", "6", "8", "9"], "correct": "8"},
-        {"id": 4, "type": "MATH", "topic": "Logic", "question": f"[{exam_level}] How many rows will a truth table have for a proposition containing 4 distinct variables?", "options": [], "correct": "16"},
-        {"id": 5, "type": "MCQ", "topic": "Relations", "question": f"[{exam_level}] A relation R on set A is reflexive if for all a in A, which condition holds?", "options": ["(a,a) belongs to R", "(a,b) implies (b,a)", "(a,b) and (b,c) implies (a,c)"], "correct": "(a,a) belongs to R"}
-    ]
-
-if not st.session_state.exam_submitted:
-    with st.form("dynamic_exam_form"):
-        st.info(f"⏱️ Exam Regulations: Answer all 5 [{exam_level}] level questions below. No negative marking.")
-        
-        for q in st.session_state.ai_questions:
-            st.markdown(f"#### **Question {q['id']}: {q['question']}**")
-            st.markdown(f"<span style='background-color:#334155; padding:2px 6px; border-radius:4px; color:#38bdf8; font-size:13px;'>🏷️ {q['topic']} | Type: {q['type']}</span>", unsafe_allow_html=True)
-            
-            if q['type'] == "MCQ":
-                st.session_state.user_answers[q['id']] = st.radio(
-                    "Select your answer:", q['options'], key=f"ai_q_{q['id']}"
-                )
-            else:
-                st.session_state.user_answers[q['id']] = st.text_input(
-                    "Type your numerical/final answer here:", key=f"ai_q_{q['id']}"
-                ).strip()
-            st.write("---")
-            
-        if st.form_submit_button("📤 Submit Mock Test"):
-            st.session_state.exam_submitted = True
-            st.rerun()
-
-elif st.session_state.exam_submitted:
-    st.success("🎯 Evaluation Completed! Check your interactive report below:")
-    
-    score = 0
-    total_q = len(st.session_state.ai_questions)
-    detailed_report = []
-    
-    for q in st.session_state.ai_questions:
-        u_ans = st.session_state.user_answers.get(q['id'], "")
-        is_correct = str(u_ans).lower() == str(q['correct']).lower()
-        if is_correct:
-            score += 1
-        detailed_report.append({
-            "Question": q['question'],
-            "Your Answer": u_ans,
-            "Correct Answer": q['correct'],
-            "Result": "✅ Correct" if is_correct else "❌ Incorrect"
-        })
-            
-    wrong = total_q - score
-    
-    fig = go.Figure(data=[go.Pie(
-        labels=['Correct', 'Incorrect'], 
-        values=[score, wrong], 
-        hole=.4,
-        marker_colors=['#4ade80', '#f43f5e']
-    )])
-    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=300)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    success_rate = (score / total_q) * 100
-    if score == 5:
-        grade, color, bg_card = "A+", "#4ade80", "rgba(74, 222, 128, 0.1)"
-        feedback = f"Outstanding performance! Your preparation for {exam_level} level questions is 100% perfect. Keep it up!"
-    elif score >= 4:
-        grade, color, bg_card = "A", "#38bdf8", "rgba(56, 189, 248, 0.1)"
-        feedback = f"Excellent job! Your core concepts are highly clear for {exam_level} level problems. Review the minor mistakes to target full marks."
-    elif score >= 2:
-        grade, color, bg_card = "B", "#fbbf24", "rgba(251, 191, 36, 0.1)"
-        feedback = f"Moderate performance. There are gaps in your understanding of {exam_level} level topics. We recommend revising your lecture sheets."
-    else:
-        grade, color, bg_card = "F (Fail)", "#f43f5e", "rgba(244, 63, 94, 0.1)"
-        feedback = f"Unsatisfactory score. You need to rebuild your foundational understanding of {exam_level} level concepts. Use the Universal Math Solver to practice more."
-
-    report_html = f"""
-        <div style="background:{bg_card}; border:1px solid {color}; padding:20px; border-radius:8px; margin-bottom:25px;">
-            <h3 style="color:{color}; margin-top:0; font-weight:600;">📊 Comprehensive Exam Report Card</h3>
-            <p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>
-            <p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Exam Level:</b> {exam_level}</p>
-            <p style="font-size:16px; color:#e2e8f0; margin:5px 0;"><b>Final Score:</b> <span style="color:{color}; font-weight:bold;">{score} / {total_q}</span> ({int(success_rate)}% Accuracy)</p>
-            <p style="font-size:18px; color:#e2e8f0; margin:10px 0;"><b>Grade:</b> <span style="background:{color}; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;">{grade}</span></p>
-            <hr style="border-color:{color}; opacity:0.2;">
-            <p style="font-style:italic; color:#cbd5e1; margin-bottom:0;"><b>🗣️ Academic Feedback & Guidance:</b> {feedback}</p>
-        </div>
-    """
-    st.markdown(report_html, unsafe_allow_html=True)
-    
-    with st.expander("🔍 Detailed Answer Sheet Review"):
-        st.dataframe(pd.DataFrame(detailed_report), use_container_width=True)
-    
-    if st.button("🔄 Take Another AI Test"):
-        st.session_state.exam_submitted = False
-        st.session_state.ai_questions = None
-        st.rerun()
-
-st.write("---")
-st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
+                        st.error(f"❌ AI Execution
