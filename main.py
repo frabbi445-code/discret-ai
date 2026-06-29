@@ -77,24 +77,18 @@ manual_key = st.sidebar.text_input(
 # ফাইনাল কি চুজ করা
 final_key = manual_key.strip() if manual_key.strip() else ANY_API_KEY.strip()
 
-# আপডেটেড অটো ডিটেকশন লজিক (নতুন AQ ফরম্যাট সহ)
+# অটো ডিটেকশন লজিক
 def detect_provider(api_key):
     if not api_key:
         return None
-    # OpenAI চেনার নিয়ম
     if api_key.startswith("sk-") and not api_key.startswith("sk-ant-"):
         return "OpenAI"
-    # Claude চেনার নিয়ম
     elif api_key.startswith("sk-ant-"):
         return "Claude"
-    # যদি শুরুতে AIzaSy থাকে অথবা AQ দিয়ে শুরু হয়, তবে সেটি Gemini
     elif api_key.startswith("AIzaSy") or api_key.startswith("AQ"):
         return "Gemini"
-    
-    # ব্যাকআপ: কোনো কারণে ফরমেট ম্যাচ না করলে দৈর্ঘ্য দেখে জেমিনি গেস করা (জেমিনি কী সাধারণত ৩৯ বা তার বেশি ক্যারেক্টার হয় এবং sk- থাকে না)
     if len(api_key) >= 35:
         return "Gemini"
-        
     return "Unknown"
 
 provider = detect_provider(final_key)
@@ -120,8 +114,8 @@ def call_universal_ai(prompt_text, api_key, provider_name):
         except Exception as e: return str(e), False
 
     elif provider_name == "Gemini":
-        # নতুন হোক বা পুরাতন, জেমিনির এপিআই এন্ডপয়েন্ট একই থাকবে
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        # ফিক্স: v1 গেটওয়ে এবং gemini-1.5-flash-latest মডেল ব্যবহার করা হয়েছে যা নতুন AQ ফরম্যাট সাপোর্ট করে
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
         headers = {'Content-Type': 'application/json'}
         payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
         try:
@@ -158,7 +152,7 @@ if provider and provider != "Unknown":
     if is_ok:
         ai_ready = True
         if provider == "OpenAI": used_gateway = "OpenAI (GPT-4o-mini)"
-        elif provider == "Gemini": used_gateway = "Gemini 1.5 Flash"
+        elif provider == "Gemini": used_gateway = "Gemini 1.5 Flash (v1)"
         elif provider == "Claude": used_gateway = "Anthropic Claude 3.5 Haiku"
     else:
         connection_error_msg = test_output
