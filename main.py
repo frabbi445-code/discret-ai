@@ -1,119 +1,106 @@
 import streamlit as st
 import google.generativeai as genai
 import time
-import plotly.graph_objects as go
-import numpy as np
+import pandas as pd
+import random
 
-# ১. পেজ সেটিংস ও প্রিমিয়াম শিরোনাম
-st.set_page_config(page_title="DiscreteMind AI Ultra Pro", page_icon="🧮", layout="centered")
+# ১. পেজ সেটিংস ও উচ্চ-কন্ট্রাস্ট মার্জিত থিম (High-Contrast Academic Theme)
+st.set_page_config(page_title="DiscreteMind AI", page_icon="🧠", layout="centered")
 
-st.title("🚀 DiscreteMind AI Ultra Pro")
-st.subheader("Advanced 3D-Enhanced Discrete Mathematics Course Project")
-st.write("Presidency University | CSE Dept | AI Innovation Project")
+# কাস্টম CSS: টেক্সট কালার একদম স্পষ্ট এবং রিডিবল করার জন্য ফিক্স
+st.markdown("""
+    <style>
+    /* মেইন ব্যাকগ্রাউন্ড */
+    .stApp {
+        background-color: #0f172a;
+    }
+    /* সাধারণ সব লেখার কালার উজ্জ্বল সাদা করা হলো যেন স্পষ্ট পড়া যায় */
+    .stApp, p, span, label, li {
+        color: #f8fafc !important;
+        font-size: 16px;
+    }
+    /* টাইটেল ও হেডিং স্টাইলিಂಗ್ */
+    h1 {
+        color: #f1f5f9 !important;
+        font-weight: 700 !important;
+    }
+    h2, h3, h4 {
+        color: #38bdf8 !important;
+        font-weight: 600 !important;
+    }
+    /* জেমিনি এআই থেকে আসা আউটপুট টেক্সট ও LaTeX ব্লকের ভেতরের লেখার কালার ফিক্স */
+    div[data-testid="stMarkdownContainer"] {
+        color: #f1f5f9 !important;
+    }
+    .katex {
+        color: #38bdf8 !important; /* গাণিতিক সূত্রগুলো হাইলাইট করার জন্য */
+        font-size: 1.05em !important;
+    }
+    /* বাটন ডিজাইন */
+    .stButton>button {
+        background: #0284c7 !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 0.6rem 2rem !important;
+        transition: all 0.2s ease;
+    }
+    .stButton>button:hover {
+        background: #0369a1 !important;
+        transform: translateY(-1px);
+    }
+    /* ফর্ম ও কার্ড সেটিংস */
+    div[data-testid="stForm"] {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-radius: 8px !important;
+        padding: 20px !important;
+    }
+    /* কন্টেইনার বক্স */
+    div[data-testid="stBlock"] {
+        color: #f8fafc !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("🧠 DiscreteMind AI: Universal Course Solver")
+st.subheader("Omni-Topic Discrete Mathematics Engine & Interactive Exam Lab")
+st.write("Presidency University | CSE Dept | Academic Edition")
 st.write("---")
 
-# ২. সাইডবার ডিজাইন (Course Project Profile)
-st.sidebar.header("🎓 Course Project Profile")
+# ২. প্রফেশনাল সাইডবার ড্যাশবোর্ড
+st.sidebar.markdown("<h3 style='color: #38bdf8;'>🎓 Student Profile</h3>", unsafe_allow_html=True)
 with st.sidebar.container(border=True):
+    st.write("**Project Target:** Universal Math Solver & Mock Test")
     st.write("**Developer:** MD FAZLE RABBI SOHAN")
     st.write("**Institution:** Presidency University")
     st.write("**Department:** CSE")
-    st.write("**Course:** Discrete Mathematics")
-    st.caption("🔥 Status: 100% Hybrid & Analytics Active")
+    st.markdown("<span style='color: #4ade80; font-weight: bold;'>🔥 Core AI Engine: Active</span>", unsafe_allow_html=True)
 
 st.sidebar.write("---")
-st.sidebar.header("🔗 Quick Navigation")
 st.sidebar.page_link("https://presidency.edu.bd/", label="Presidency University Portal", icon="🏫")
 
-# ৩. ৩ডি অ্যানিমেটেড মডেল সেকশন (Presentation Mode)
-st.write("### 🌐 Live 3D AI Topology Node Mesh (Presentation Mode)")
-st.caption("মাউস দিয়ে স্ক্রল করে ৩ডি মডেলটি জুম করো এবং ড্র্যাগ করে চারদিকে ঘুরিয়ে স্যারদের দেখাও:")
-
-n_nodes = 40
-x = np.random.standard_normal(n_nodes)
-y = np.random.standard_normal(n_nodes)
-z = np.random.standard_normal(n_nodes)
-
-fig = go.Figure(data=[go.Scatter3d(
-    x=x, y=y, z=z,
-    mode='markers+lines',
-    marker=dict(size=6, color=z, colorscale='Viridis', opacity=0.8),
-    line=dict(color='#38bdf8', width=1.5)
-)])
-
-fig.update_layout(
-    margin=dict(l=0, r=0, b=0, t=0),
-    scene=dict(
-        xaxis=dict(showbackground=False, showticklabels=False, title=''),
-        yaxis=dict(showbackground=False, showticklabels=False, title=''),
-        zaxis=dict(showbackground=False, showticklabels=False, title=''),
-    ),
-    height=300
-)
-st.plotly_chart(fig, use_container_width=True)
-st.write("---")
-
-# ৪. স্ট্রিমলিট সিক্রেটস থেকে এপিআই কি রিড করা
+# ৩. স্ট্রিমলিট সিক্রেটস থেকে এপিআই কি রিড করা
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
     GEMINI_API_KEY = None
 
-# ৫. ডিসক্রিট ম্যাথ টপিক সিলেকশন
-topic = st.selectbox(
-    "🎯 সলভ করার জন্য ডিসক্রিট ম্যাথ টপিকটি সিলেক্ট করো:", 
-    [
-        "📊 Truth Table & Propositional Logic (লজিক টেবিল)", 
-        "⭕ Set Theory (ইউনিয়ন, ইন্টারসেকশন ও ভেন ডায়াগ্রাম)", 
-        "🔢 Permutation & Combination (বিন্যাস ও সমাবেশ)"
-    ]
-)
+# ৪. ইউনিভার্সাল সিঙ্গেল ইনপুট ইন্টারফেস
+st.markdown("<h3 style='color: #38bdf8;'>🚀 Universal Math Input Box</h3>", unsafe_allow_html=True)
+st.caption("💡 ট্রুথ টেবিল, সেট, গ্রাফ থিওরি, ট্রি, পারমিউটেশন, প্রব্যাবিলিটি বা রিকুরেন্স রিলেশন—যেকোনো গাণিতিক প্রশ্ন নিচের বক্সে লেখো:")
 
-# ৬. স্মার্ট প্র্যাকটিস কুইক বাটনসমূহ
-st.write("💡 **স্মার্ট প্র্যাকটিস টুলস (যেকোনো একটি বাটনে ক্লিক করো):**")
-col1, col2, col3 = st.columns(3)
-
-if 'input_val' not in st.session_state:
-    st.session_state.input_val = ""
-
-if col1.button("📋 লজিক এক্সাম্পল রান"):
-    st.session_state.input_val = "Prove that the logical expression (P -> Q) AND NOT Q -> NOT P is a Tautology using a truth table."
-if col2.button("⭕ সেট থিওরি এক্সাম্পল রান"):
-    st.session_state.input_val = "Let U = {1,2,3,4,5,6,7,8,9,10}. If A = {1,3,5,7,9} and B = {2,3,5,7}, find A U B, A n B, and A' with verification steps."
-if col3.button("🔢 বিন্যাস ও সমাবেশ রান"):
-    st.session_state.input_val = "In how many ways can a committee of 4 members be formed from a group of 7 men and 5 women if the committee must include exactly 2 numbers of women?"
-
-st.write("---")
-
-# 🔍 ইনপুট বক্স ও লাইভ মেট্রিক্স
 user_query = st.text_area(
-    "📝 তোমার ডিসক্রিট ম্যাথের প্রশ্নটি নিচে টাইপ করো বা এডিট করো:", 
-    value=st.session_state.input_val,
-    placeholder="এখানে তোমার প্রশ্নটি লেখো...", 
-    height=130
+    "📝 তোমার ডিসক্রিট ম্যাথের প্রশ্নটি এখানে টাইপ করো বা পেস্ট করো:",
+    value="",
+    placeholder="যেমন: In a class of 50 students, 30 like C and 25 like Java...",
+    height=120
 )
 
-m_col1, m_col2 = st.columns(2)
-with m_col1:
-    st.info(f"🔹 **ক্যারেক্টার সংখ্যা:** {len(user_query)}")
-with m_col2:
-    st.info(f"🔹 **মোট শব্দ সংখ্যা:** {len(user_query.split())}")
-
-st.write("")
-
-# Action Buttons
-btn_col1, btn_col2 = st.columns([4, 1])
-with btn_col1:
-    solve_btn = st.button("🚀 এক্সপার্ট এআই সリューション জেনারেট করো", use_container_width=True)
-with btn_col2:
-    if st.button("🗑️ Reset", use_container_width=True):
-        st.session_state.input_val = ""
-        st.rerun()
-
-# 🧮 স্মার্ট হাইব্রিড ব্যাকএন্ড (অফলাইন ব্যাকআপ ইঞ্জিন সহ)
-if solve_btn:
-    if not user_query:
-        st.warning("⚠️ আগে সলভ করার জন্য কোনো প্রশ্ন ইনপুট দাও!")
+if st.button("🚀 এক্সপার্ট এআই समाधान জেনারেট করো", use_container_width=True):
+    if not user_query.strip():
+        st.warning("⚠️ দয়া করে আগে ইনপুট বক্সে কোনো প্রশ্ন লিখো!")
     else:
         progress_bar = st.progress(0)
         status_text = st.empty()
@@ -121,177 +108,166 @@ if solve_btn:
         for percent_complete in range(10, 101, 30):
             time.sleep(0.1)
             progress_bar.progress(percent_complete)
-            status_text.markdown(f"⚙️ **এআই ডিপ লার্নিং লজিক প্রসেস করছে... {percent_complete}%**")
+            status_text.markdown(f"⚙️ **এআই ওমনি-পার্সার ম্যাথ অ্যানালাইসিস করছে... {percent_complete}%**")
             
-        with st.spinner("✨ ফাইনাল সリューション ফরম্যাট করা হচ্ছে..."):
-            output_text = ""
+        with st.spinner("✨ সমাধান একাডেমিক স্ট্যান্ডার্ডে ফরম্যাট করা হচ্ছে..."):
             try:
                 if GEMINI_API_KEY:
                     genai.configure(api_key=GEMINI_API_KEY)
-                    model = genai.GenerativeModel(model_name='gemini-1.5-flash')
-                    prompt = f"Provide a university professor-level solution for: {user_query}"
+                    model = genai.GenerativeModel(model_name='gemini-2.5-flash')
+                    prompt = f"You are an expert university professor in Discrete Mathematics. Provide a rigorous, step-by-step, textbook-style solution for the student's query. Use clean and correct LaTeX formatting for matrices or formulas: {user_query}"
                     response = model.generate_content(prompt)
                     output_text = response.text
                 else:
-                    raise Exception("No Key")
-            except Exception:
-                cleaned_query = user_query.lower()
-                
-                if "ali studies" in cleaned_query or ("p→q" in cleaned_query and "evaluate" in cleaned_query):
-                    output_text = """
-### 📝 **Mathematical Analysis / Given Data**
-Given Propositions:
-* $P$: "Ali studies every day." (Given as **True**)
-* $Q$: "Ali passes the exam." (Given as **False**)
-
-We need to evaluate the truth value of the logical expression:
-$$\\text{Expression: } (P \\rightarrow Q) \\land \\neg Q$$
-
-### 🛠️ **Step-by-Step Derivation**
-1. **Step 1: Evaluate the Implication ($P \\rightarrow Q$)**
-   * Since $P = \\text{True}$ and $Q = \\text{False}$, the conditional statement $P \\rightarrow Q$ is **False**.
-   * $$\\text{Value: } \\text{True} \\rightarrow \\text{False} = \\mathbf{False}$$
-
-2. **Step 2: Evaluate the Negation ($\\neg Q$)**
-   * Since $Q = \\text{False}$, its negation $\\neg Q$ is **True**.
-   * $$\\text{Value: } \\neg(\\text{False}) = \\mathbf{True}$$
-
-3. **Step 3: Evaluate the Conjunction AND ($\\land$)**
-   * Now combine both parts: $(P \\rightarrow Q) \\land \\neg Q \\Rightarrow \\text{False} \\land \\text{True}$.
-   * According to the AND operator rules, if any input is False, the output is **False**.
-   * $$\\text{Value: } \\text{False} \\land \\text{True} = \\mathbf{False}$$
-
-### 📊 **Visual Representation (Truth Table Segment)**
-| $P$ | $Q$ | $\\neg Q$ | $P \\rightarrow Q$ | $(P \\rightarrow Q) \\land \\neg Q$ |
-| :---: | :---: | :---: | :---: | :---: |
-| **True** | **False** | **True** | **False** | **False (Absolute Result)** |
-
-### 🎯 **Final Conclusion**
-> **Definitive Answer:** The final evaluated truth value of the given logical expression for the specific case is **False**.
-"""
-                elif "tautology" in cleaned_query or "truth table" in cleaned_query or "-> " in cleaned_query or "→" in cleaned_query:
-                    output_text = """
-### 📝 **Mathematical Analysis / Given Data**
-We need to prove that the logical expression $[(P \\rightarrow Q) \\land \\neg Q] \\rightarrow \\neg P$ is a **Tautology** using a Truth Table.
-
-### 🛠️ **Step-by-Step Derivation**
-1. Evaluate the conditional statement $P \\rightarrow Q$.
-2. Apply the logical AND operator with $\\neg Q$.
-3. Evaluate the final implication pointing to $\\neg P$.
-
-### 📊 **Visual Representation (Truth Table)**
-| $P$ | $Q$ | $\\neg P$ | $\\neg Q$ | $P \\rightarrow Q$ | $(P \\rightarrow Q) \\land \\neg Q$ | $[(P \\rightarrow Q) \\land \\neg Q] \\rightarrow \\neg P$ |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| T | T | F | F | T | F | **T** |
-| T | F | F | T | F | F | **T** |
-| F | T | T | F | T | F | **T** |
-| F | F | T | T | T | T | **T** |
-
-### 🎯 **Final Conclusion**
-> **SUCCESS:** Since all the final column values are **True (T)**, the expression is absolutely verified as a **Tautology**.
-"""
-                elif "u =" in cleaned_query or "set theory" in topic.lower():
-                    output_text = """
-### 📝 **Mathematical Analysis / Given Data**
-Given sets:
-* Universal Set $U = \\{1, 2, 3, 4, 5, 6, 7, 8, 9, 10\\}$
-* Set $A = \\{1, 3, 5, 7, 9\\}$
-* Set $B = \\{2, 3, 5, 7\\}$
-
-### 🛠️ **Step-by-Step Derivation & Operations**
-1. **Union ($A \\cup B$):** $\\{1, 2, 3, 5, 7, 9\\}$
-2. **Intersection ($A \\cap B$):** $\\{3, 5, 7\\}$
-3. **Complement ($A'$):** $\\{2, 4, 6, 8, 10\\}$
-
-### 🎯 **Final Conclusion**
-> **Definitive Answer:** Operations successfully evaluated and verified.
-"""
-                else:
-                    output_text = """
-### 📝 **Mathematical Analysis / Given Data**
-* Total Men = $7$, Total Women = $5$. Committee members needed = $4$.
-* Condition: Committee must include **exactly 2 women**.
-
-### 🛠️ **Step-by-Step Calculation**
-1. Select 2 women from 5: $\\binom{5}{2} = 10$ ways.
-2. Select remaining 2 members from 7 men: $\\binom{7}{2} = 21$ ways.
-3. Total combinations: $10 \\times 21 = 210$.
-
-### 🎯 **Final Conclusion**
-> **Definitive Answer:** The committee can be formed in exactly **210** different ways.
-"""
+                    output_text = "\n⚠️ **System Note:** Please add your `GEMINI_API_KEY` in Streamlit Secrets to solve custom questions live."
+            except Exception as e:
+                output_text = f"❌ API Method Access Error: {e}. অনুগ্রহ করে নিশ্চিত করুন যে আপনার API key-টি সচল এবং সঠিক পারমিশনযুক্ত।"
             
             status_text.empty()
             progress_bar.empty()
             st.balloons()
-            st.success("🎉 সমাধান সফলভাবে তৈরি হয়েছে!")
+            st.success("🎉 সমাধান সফলভাবে জেনারেট হয়েছে!")
             with st.container(border=True):
                 st.markdown(output_text)
 
 st.write("---")
 
-# 🧠 কুইজ ইঞ্জিন সেকশন (Course Project Assessment)
-st.subheader("🧠 Dynamic Discrete Mathematics Course Quiz")
+# 🧠 ৫. ইন্টারেক্টিভ মক টেস্ট সিমুলেটর
+st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>", unsafe_allow_html=True)
+st.caption("💡 এটি একটি রিয়েল-টাইম এক্সাম ল্যাব। প্রশ্নগুলোর উত্তর সিলেক্ট করার সাথে সাথে তোমার লাইভ প্র唝্রেস বার আপডেট হবে।")
 
-quiz_data = [
-    {"topic": "Propositional Logic", "question": "১. প্রপোজিশনাল লজিকে (Propositional Logic) P ∧ Q কখন সত্য (True) হয়?", "options": ["A) শুধুমাত্র যখন P এবং Q দুটিই True", "B) যেকোনো একটি True হলে", "C) দুটিই False হলে"], "correct": 0},
-    {"topic": "Set Theory", "question": "২. যদি কোনো সেটে ৪টি উপাদান (Elements) থাকে, তবে তার পাওয়ার সেটে (Power Set) কতটি উপাদান থাকবে?", "options": ["A) ৪টি", "B) ৮টি", "C) ১৬টি"], "correct": 2},
-    {"topic": "Permutation & Combination", "question": "৩. ৭ জন ছাত্র থেকে ৩ জনের একটি দল কত উপায়ে বাছাই (Combination) করা যাবে?", "options": ["A) ২১ উপায়ে", "B) ৩৫ উপায়ে", "C) ৪২ উপায়ে"], "correct": 1},
-    {"topic": "Propositional Logic", "question": "৪. একটি জটিল উক্তি P ∨ ~P সর্বদা সত্য হলে তাকে কী বলা হয়?", "options": ["A) Tautology", "B) Contradiction", "C) Contingency"], "correct": 0},
-    {"topic": "Set Theory", "question": "৫. সেট A = {1, 2} এবং B = {2, 3} হলে, A ∩ B এর মান কত?", "options": ["A) {1, 2, 3}", "B) {2}", "C) {1, 3}"], "correct": 1},
-    {"topic": "Permutation & Combination", "question": "৬. 'PU' শব্দটির অক্ষরগুলোকে কত উপায়ে সাজানো (Permutation) সম্ভব?", "options": ["A) ২ উপায়ে", "B) ৪ উপায়ে", "C) ৬ উপায়ে"], "correct": 0}
+if 'mock_seed' not in st.session_state or st.sidebar.button("🔄 প্রশ্নপত্র নতুন করে জেনারেট করো"):
+    st.session_state.mock_seed = random.randint(1, 9999)
+    st.session_state.test_submitted = False
+    st.session_state.answers = {}
+
+random.seed(st.session_state.mock_seed)
+nodes_count = random.randint(4, 6)
+max_edges = int(nodes_count * (nodes_count - 1) / 2)
+subset_n = random.randint(3, 5)
+
+questions_list = [
+    {
+        "id": 1,
+        "topic": "Graph Theory",
+        "question": f"১. একটি Simple Graph-এ যদি মোট নোড বা ভার্টেক্স সংখ্যা {nodes_count} হয়, তবে গ্রাফটিতে সর্বোচ্চ কতটি এজ (Edges) থাকতে পারে?",
+        "options": [f"{nodes_count}টি", f"{max_edges}টি", f"{nodes_count * 2}টি"],
+        "correct": f"{max_edges}টি"
+    },
+    {
+        "id": 2,
+        "topic": "Graph Theory",
+        "question": "২. ডিসক্রিট ম্যাথে একটি কানেক্টেড গ্রাফে যদি কোনো সাইকেল (Cycle) না থাকে, তবে তাকে কী বলা হয়?",
+        "options": ["Tree (বৃক্ষ)", "Complete Graph", "Bipartite Graph"],
+        "correct": "Tree (বৃক্ষ)"
+    },
+    {
+        "id": 3,
+        "topic": "Set Theory & Relations",
+        "question": f"৩. একটি সেটে উপাদান সংখ্যা {subset_n} হলে, সেটটির রিফ্লেক্সিভ রিলেশন (Reflexive Relations) এর সংখ্যা কতটি হবে?",
+        "options": [f"2^{subset_n * (subset_n - 1)}টি", f"2^{subset_n**2}টি", f"{2**subset_n}টি"],
+        "correct": f"2^{subset_n * (subset_n - 1)}টি"
+    },
+    {
+        "topic": "Set Theory & Relations",
+        "id": 4,
+        "question": "৪. যদি কোনো ফাংশন একই সাথে One-to-One এবং Onto হয়, তবে তাকে কী ধরণের ফাংশন বলা হয়?",
+        "options": ["Bijective Function", "Surjective Function", "Injective Function"],
+        "correct": "Bijective Function"
+    },
+    {
+        "topic": "Propositional Logic",
+        "id": 5,
+        "question": "৫. প্রপোজিশনাল লজিকের নিয়ম অনুযায়ী, একটি কন্ডিশনাল উক্তি P → Q কখন একমাত্র মিথ্যা (False) হয়?",
+        "options": ["যখন P সত্য এবং Q মিথ্যা", "যখন দুটি উক্তিই মিথ্যা হয়", "যখন P মিথ্যা এবং Q সত্য"],
+        "correct": "যখন P সত্য এবং Q মিথ্যা"
+    }
 ]
 
-if 'current_q' not in st.session_state: st.session_state.current_q = 0
-if 'topic_scores' not in st.session_state: st.session_state.topic_scores = {"Propositional Logic": 0, "Set Theory": 0, "Permutation & Combination": 0}
-if 'quiz_complete' not in st.session_state: st.session_state.quiz_complete = False
+# লাইভ প্রগ্রেস ট্র্যাকিং
+answered_count = sum(1 for q in questions_list if st.session_state.answers.get(q['id']) is not None)
+completion_rate = answered_count / len(questions_list)
 
-total_questions = len(quiz_data)
-
-if not st.session_state.quiz_complete:
-    q_index = st.session_state.current_q
-    current_topic = quiz_data[q_index]['topic']
-    st.info(f"📋 প্রশ্ন: {q_index + 1} / {total_questions} | 🏷️ টপিক: {current_topic}")
-    st.write(f"**{quiz_data[q_index]['question']}**")
-    user_ans = st.radio("সর্বোত্তম উত্তরটি সিলেক্ট করো:", quiz_data[q_index]['options'], key=f"q_{q_index}")
+if not st.session_state.test_submitted:
+    st.markdown(f"**📝 তোমার পরীক্ষার প্রগ্রেস:** {answered_count} / 5 টি প্রশ্নের উত্তর দিয়েছ")
+    st.progress(completion_rate)
     
-    if st.button("উত্তর লক করো ও পরবর্তী প্রশ্ন ➡️"):
-        selected_index = quiz_data[q_index]['options'].index(user_ans)
-        if selected_index == quiz_data[q_index]['correct']:
-            st.session_state.topic_scores[current_topic] += 1
-            st.toast("🎉 সঠিক উত্তর!", icon="✅")
-        else:
-            st.toast("❌ ভুল উত্তর!", icon="🚨")
-        if q_index + 1 < total_questions:
-            st.session_state.current_q += 1
+    with st.form("mock_test_form"):
+        st.markdown("<p style='color:#f43f5e; font-weight:bold;'>⏱️ পরীক্ষার নিয়মাবলী: নিচে ৫টি প্রশ্ন দেওয়া আছে। প্রতিটি প্রশ্নের জন্য ১ মার্কস। কোনো নেগেটিভ মার্কিং নেই।</p>", unsafe_allow_html=True)
+        st.write("---")
+        
+        for q in questions_list:
+            st.markdown(f"#### **{q['question']}**")
+            st.markdown(f"<span style='background-color:#334155; padding:4px 8px; border-radius:4px; color:#38bdf8; font-size:14px;'>🏷️ টপিক: {q['topic']}</span>", unsafe_allow_html=True)
+            
+            st.session_state.answers[q['id']] = st.radio(
+                "সভিক উত্তরটি সিলেক্ট করো:", 
+                q['options'], 
+                key=f"mock_ans_{q['id']}_{st.session_state.mock_seed}"
+            )
+            st.write("---")
+            
+        submit_test = st.form_submit_button("📤 সাবমিট মক টেস্ট (Submit Exam)")
+        
+        if submit_test:
+            st.session_state.test_submitted = True
             st.rerun()
-        else:
-            st.session_state.quiz_complete = True
-            st.rerun()
+
 else:
-    st.success("🎉 অভিনন্দন! তুমি কোর্স কুইজ টেস্ট সফলভাবে সম্পন্ন করেছ। নিচে তোমার লাইভ অ্যানালিটিক্স দেওয়া হলো:")
-    total_score = sum(st.session_state.topic_scores.values())
-    with st.container(border=True):
-        st.markdown("### 📊 Course Project Performance Report")
-        st.write(f"**টোটাল টেস্ট স্কোর:** `{total_score}` / `{total_questions}`")
-        st.write("---")
-        st.markdown("#### 🎯 Topic-wise Analytics & Feedback")
-        for topic_name, score in st.session_state.topic_scores.items():
-            status_color = "🔴 দুর্বল (Poor)" if score == 0 else "🟡 মাঝারি (Average)" if score == 1 else "🟢 দক্ষ (Excellent)"
-            st.write(f"🔹 **{topic_name}:** `{score}/2` -> **{status_color}**")
-            if score == 2: st.caption("💡 *ফিডব্যাক:* এই টপিকে তোমার বেসিক এবং গাণিতিক দক্ষতা চমৎকার! পরীক্ষার জন্য তুমি পুরোপুরি প্রস্তুত।")
-            elif score == 1: st.caption("💡 *ফিডব্যাক:* তোমার কনসেপ্ট ঠিক আছে তবে ট্রুথ টেবিল বা ফর্মুলা প্রয়োগে আরেকটু প্র্যাকটিস দরকার।")
-            else: st.caption("💡 *ফিডব্যাক:* এই টপিকে বড় ধরনের ঘাটতি রয়েছে। কোর্স লেকচার শিটগুলো আবার রিভিশন দাও।")
-            st.write("")
-        st.write("---")
-        if total_score == total_questions: st.info("🏅 **সার্টিফিকেট রিমার্ক:** পারফেক্ট স্কোর! তুমি একজন ডিসক্রিট ম্যাথ এক্সপার্ট।")
-        elif total_score >= 3: st.info("👍 **সার্টিফিকেট রিমার্ক:** ভালো পারফরম্যান্স। ফাইনালে তোমার এ-প্লাস (A+) নিশ্চিত।")
-        else: st.warning("📚 **সার্টিফিকেট রিমার্ক:** কোর্স টপিকগুলো তোমাকে আরেকটু ভালো করে রিভিশন দিতে হবে।")
-    if st.button("🔄 কুইজ টেস্ট আবার শুরু করো"):
-        st.session_state.current_q = 0
-        st.session_state.topic_scores = {"Propositional Logic": 0, "Set Theory": 0, "Permutation & Combination": 0}
-        st.session_state.quiz_complete = False
+    # 🎯 ইভালুয়েশন ও অ্যাকাডেমিক ফিডব্যাক কার্ড
+    st.balloons()
+    
+    score = 0
+    detailed_report = []
+    
+    for q in questions_list:
+        user_ans = st.session_state.answers.get(q['id'])
+        is_correct = user_ans == q['correct']
+        if is_correct:
+            score += 1
+        detailed_report.append({
+            "প্রশ্ন": q['question'],
+            "তোমার উত্তর": user_ans,
+            "সঠিক উত্তর": q['correct'],
+            "ফলাফল": "✅ সঠিক" if is_correct else "❌ ভুল"
+        })
+        
+    success_rate = (score / 5) * 100
+    if score == 5:
+        grade, color, bg_card = "A+", "#4ade80", "rgba(74, 222, 128, 0.1)"
+        feedback = "অসাধারণ পারফরম্যান্স! তোমার ডিসক্রিট ম্যাথ প্রিপারেশন ১০০% পারফেক্ট। ল্যাব ফাইনাল এবং থিওরিতে তুমি নির্ঘাত ফুল মার্কস পাচ্ছো। কিপ ইট আপ!"
+    elif score >= 4:
+        grade, color, bg_card = "A", "#38bdf8", "rgba(56, 189, 248, 0.1)"
+        feedback = "খুব ভালো পারফরম্যান্স! মাইনর কিছু গ্যাপ ছাড়া তোমার বেসিক কনসেপ্ট বেশ পরিষ্কার। ভুল হওয়া প্রশ্নগুলো আরেকবার রিভিশন দিলে ল্যাবে চমৎকার এ-প্লাস নিশ্চিত।"
+    elif score >= 2:
+        grade, color, bg_card = "B", "#fbbf24", "rgba(251, 191, 36, 0.1)"
+        feedback = "মাঝারি পারফরম্যান্স। গ্রাফ থিওরি এবং লজিকের কিছু জায়গায় তোমার এখনও ঘাটতি রয়েছে। ল্যাব লেকচার শিটগুলো ভালোভাবে রিভিশন দেওয়ার পরামর্শ দেওয়া হলো।"
+    else:
+        grade, color, bg_card = "F (Fail)", "#f43f5e", "rgba(244, 63, 94, 0.1)"
+        feedback = "অসন্তোষজনক স্কোর। ডিসক্রিট ম্যাথমেটিক্সের মূল থিওরিগুলো তোমার আরেকবার স্ক্র্যাচ থেকে পড়া উচিত। পরীক্ষার আগে কোনো টপিক বুঝতে সমস্যা হলে উপরের এআই সলভার ইঞ্জিন ব্যবহার করে প্র্যাকটিস করো।"
+
+    # মার্জিত প্রফেশনাল রিপোর্ট কার্ড ড্যাশবোর্ড
+    st.markdown(f"""
+        <div style='background:{bg_card}; border:1px solid {color}; padding:20px; border-radius:8px; margin-bottom:25px;'>
+            <h3 style='color:{color}; margin-top:0; font-weight:600;'>📊 Comprehensive Exam Report Card</h3>
+            <p style='font-size:16px; color:#e2e8f0; margin:5px 0;'><b>পরীক্ষার্থী:</b> MD FAZLE RABBI SOHAN</p>
+            <p style='font-size:16px; color:#e2e8f0; margin:5px 0;'><b>প্রাপ্ত স্কোর:</b> <span style='color:{color}; font-weight:bold;'>{score} / 5</span> ({int(success_rate)}% Accuracy)</p>
+            <p style='font-size:18px; color:#e2e8f0; margin:10px 0;'><b>ফাইনাল গ্রেড:</b> <span style='background:{color}; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;'>{grade}</span></p>
+            <hr style='border-color:{color}; opacity:0.2;'>
+            <p style='font-style:italic; color:#cbd5e1; margin-bottom:0;'><b>🗣️ একাডেমিক ফিডব্যাক ও গাইডলাইন:</b> {feedback}</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # বিস্তারিত রিভিউ টেবিল
+    with st.expander("🔍 প্রশ্নভিত্তিক উত্তরপত্র পর্যালোচনা (Detailed Answer Review)"):
+        df_report = pd.DataFrame(detailed_report)
+        st.dataframe(df_report, use_container_width=True)
+
+    if st.button("🔄 নতুন প্রশ্নপত্রে আবার মক টেস্ট দাও"):
+        st.session_state.mock_seed = random.randint(1, 9999)
+        st.session_state.test_submitted = False
+        st.session_state.answers = {}
         st.rerun()
 
 st.write("---")
-st.caption("Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab")
+st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
