@@ -123,65 +123,114 @@ def call_universal_ai(prompt_text, api_key, provider_name):
             payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
             try:
                 res = requests.post(url, headers=headers, json=payload, timeout=12)
-                # --- [FIXED LINE] সিনট্যাক্স এরর সম্পূর্ণ ঠিক করা হয়েছে ---
                 if res.status_code == 200:
                     return res.json()['candidates'][0]['content']['parts'][0]['text'], True
                 last_error = f"Gemini Error {res.status_code}: {res.text}"
             except Exception as e: 
                 last_error = str(e)
         return last_error, False
+
+    elif provider_name == "Claude":
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            'X-API-Key': api_key,
+            'Anthropic-Version': '2023-06-01',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            "model": "claude-3-5-sonnet-20241022",
+            "max_tokens": 1024,
+            "messages": [{"role": "user", "content": prompt_text}]
+        }
+        try:
+            res = requests.post(url, headers=headers, json=payload, timeout=15)
+            if res.status_code == 200:
+                return res.json()['content'][0]['text'], True
+            return f"Claude Error {res.status_code}: {res.text}", False
+        except Exception as e: return str(e), False
         
     return "Unsupported or undetected provider", False
 
 # =================================================================
-# ৩. মেইন ইউজার ইন্টারফেস (UI) ও মক টেস্ট লজিক রেন্ডারিং
+# ৩. মেইন ইউজার ইন্টারফেস (UI) ও মক টেস্ট লজিক
 # =================================================================
 st.title("🧠 DiscreteMind AI")
 st.markdown("Your advanced AI companion for smart reasoning and instant solutions.")
 
-# সাইডবারে কানেকশন স্ট্যাটাস প্যানেল
+# সাইডবারে লাইভ কানেকশন ইন্ডিকেটর প্যানেল
 if provider:
     st.sidebar.markdown(f'<div class="status-panel" style="background-color: #1e3a1e; color: #4ade80; border: 1px solid #22c55e;">Connected to: {provider}</div>', unsafe_allow_html=True)
 else:
     st.sidebar.markdown('<div class="status-panel" style="background-color: #3a1e1e; color: #f87171; border: 1px solid #ef4444;">Not Connected</div>', unsafe_allow_html=True)
 
-# মূল ইনপুট ফর্ম (যা আপনার স্ক্রিনশটে দেখা যাচ্ছে)
+# মক টেস্ট ও ইনপুট ফর্ম বক্স
 with st.form("ai_form"):
-    user_prompt = st.text_area("Ask me anything:", placeholder="Type your question or problem here...")
+    user_prompt = st.text_area("Ask me anything / Generate Mock Test:", placeholder="Type your question or request a mock test here...")
     submit_button = st.form_submit_button("Generate Response")
 
-# সাবমিট বাটন প্রেস করার পর রেসপন্স প্রসেসিং লজিক
+# =================================================================
+# ৪. বাকি অংশ (যা আগে ফাইল কেটে যাওয়ার কারণে বাদ পড়েছিল)
+# =================================================================
 if submit_button:
     if not final_key:
         st.error("🔑 API Key পাওয়া যায়নি! দয়া করে সাইডবারে একটি সঠিক Key প্রদান করুন।")
     elif not user_prompt.strip():
-        st.warning("⚠️ দয়া করে বক্সে আপনার প্রশ্নটি লিখুন।")
+        st.warning("⚠️ দয়া করে বক্সে কিছু লিখুন।")
     else:
-        with st.spinner("Processing your request..."):
+        with st.spinner("Processing with AI..."):
             response_text, success = call_universal_ai(user_prompt, final_key, provider)
             
             if success:
-                # ১. সুন্দর সাদা বক্সে এআই এর জেনারেট করা টেক্সট বা উত্তর দেখানো
+                # আপনার CSS থিম অনুযায়ী সুন্দর সাদা বক্সে এআই এর আউটপুট জেনারেট হবে
+                st.markdown("### 📝 AI Response / Test Papers")
                 st.markdown(f'<div class="answer-box">{response_text}</div>', unsafe_allow_html=True)
                 
-                # ২. অতিরিক্ত ডেটা অ্যানালাইসিস উইজেটস (আপনার ইম্পোর্ট করা Pandas ও Plotly অনুযায়ী)
-                # নোট: এআই রেসপন্স অনুযায়ী যদি কোনো বিশেষ গ্রাফ বা চার্ট আগের কোডে থেকে থাকে, সেটি এখানে অটোমেটিক রেন্ডার হবে।
-                st.markdown("### 📊 Performance Insights")
+                st.markdown("---")
                 
-                # উদাহরণস্বরূপ একটি মক টেস্ট অ্যানালাইসিস চার্ট (Plotly)
+                # ৫. অ্যানালিটিক্স এবং ড্যাশবোর্ড লজিক (Pandas এবং Plotly-র ব্যবহার)
+                st.markdown("## 📊 Performance & Confidence Analytics")
+                
+                # কাস্টম অ্যানালিসিসের জন্য মক ডেটা টেবিল (Pandas DataFrame)
+                metrics_data = {
+                    "Metric/Topic": ["Accuracy", "Speed", "Conceptual Clarity", "Response Time"],
+                    "Score (%)": [88, 75, 92, 80],
+                    "Status": ["Excellent", "Needs Improvement", "Outstanding", "Good"]
+                }
+                df = pd.DataFrame(metrics_data)
+                
+                # সুন্দর ডিজাইনড স্ট্রিমলিট টেবিল
+                st.markdown("### 📋 Evaluation Matrix")
+                st.dataframe(df, use_container_width=True)
+                
+                # Plotly ড্যাশবোর্ড গেজ চার্ট রেন্ডারিং
+                st.markdown("### 📈 Accuracy Meter")
                 fig = go.Figure(go.Indicator(
                     mode = "gauge+number",
-                    value = 85,
-                    title = {'text': "Confidence Score (%)"},
+                    value = 88,
                     domain = {'x': [0, 1], 'y': [0, 1]},
+                    title = {'text': "Overall Score", 'font': {'color': '#38bdf8', 'size': 20}},
                     gauge = {
                         'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "#f8fafc"},
-                        'bar': {'color': "#38bdf8"},
+                        'bar': {'color': "#0284c7"},
                         'bgcolor': "#1e293b",
-                        'bordercolor': "#334155"
+                        'borderwidth': 2,
+                        'bordercolor': "#334155",
+                        'steps': [
+                            {'range': [0, 50], 'color': '#3a1e1e'},
+                            {'range': [50, 80], 'color': '#2e2a14'},
+                            {'range': [80, 100], 'color': '#1e3a1e'}
+                        ],
                     }
                 ))
-                fig.update_layout(paper_bgcolor='#0f172a', font={'color': "#f8fafc"})
+                
+                fig.update_layout(
+                    paper_bgcolor='#0f172a',
+                    plot_bgcolor='#0f172a',
+                    font={'color': "#f8fafc", 'family': "Arial"},
+                    margin=dict(l=20, r=20, t=50, b=20),
+                    height=300
+                )
+                
                 st.plotly_chart(fig, use_container_width=True)
                 
             else:
