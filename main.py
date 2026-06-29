@@ -67,21 +67,28 @@ except Exception:
     GEMINI_API_KEY = None
 
 ai_ready = False
-# AQ. ফরম্যাট এবং ওঅথ কি রুটিন হ্যান্ডলিং লজিক
+ai_model = None
+
 if GEMINI_API_KEY:
+    # স্ট্রিং থেকে অতিরিক্ত স্পেস বা হিডেন ক্যারেক্টার ট্রিম করা হলো
+    clean_key = str(GEMINI_API_KEY).strip().replace('"', '').replace("'", "")
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        # ক্লাউড প্রোজেক্ট কিগুলোর জন্য টেক্সট-ভিত্তিক স্ট্যাবল এআই কোর সিলেক্ট করা হলো
-        ai_model = genai.GenerativeModel('models/gemini-1.0-pro')
+        genai.configure(api_key=clean_key)
         
-        # কি ভ্যালিডেশন টেস্ট পিং
-        test_resp = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 2})
-        if test_resp.text:
+        # কী-র ফরম্যাটের ওপর ভিত্তি করে ডাইনামিক মডেল সিলেকশন রুটিন
+        if clean_key.startswith("AQ"):
+            model_name = 'models/gemini-1.0-pro'
+        else:
+            model_name = 'gemini-1.5-flash'
+            
+        ai_model = genai.GenerativeModel(model_name=model_name)
+        
+        # লাইভ কানেক্টিভিটি টেস্ট পিং কল
+        test_resp = ai_model.generate_content("Hello", generation_config={"max_output_tokens": 2})
+        if test_resp:
             ai_ready = True
     except Exception:
         ai_ready = False
-else:
-    ai_model = None
 
 # সবার ওপরে দৃশ্যমান লাইভ ইন্ডিকেটর প্যানেল
 if ai_ready:
@@ -176,15 +183,15 @@ if st.button("Generate Answer", use_container_width=True):
                     response = ai_model.generate_content(prompt)
                     solution = response.text
                     st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
+                    
+                    st.balloons()
+                    st.success("🎉 Solution generated successfully!")
+                    
+                    st.markdown('<div class="answer-box">', unsafe_allow_html=True)
+                    st.markdown(solution)
+                    st.markdown('</div>', unsafe_allow_html=True)
                 else:
-                    solution = "⚠️ Core AI Engine is currently not connected or API permissions are invalid."
-                
-                st.balloons()
-                st.success("🎉 Solution generated successfully!")
-                
-                st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-                st.markdown(solution)
-                st.markdown('</div>', unsafe_allow_html=True)
+                    st.error("⚠️ Core AI Engine is currently not connected or API permissions are invalid.")
                 
             except Exception as e:
                 st.error(f"❌ Core AI Engine Execution Error: {e}")
