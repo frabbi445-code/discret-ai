@@ -83,7 +83,7 @@ if final_key:
     try:
         genai.configure(api_key=clean_key)
         
-        # ৪MD ফিক্স: AQ কী-র জন্য v1beta 404 এরর বাইপাস করতে ডিরেক্ট মডেল পাথ দেওয়া হলো
+        # AQ কী-র জন্য নির্দিষ্ট মডেল পাথ অ্যাসাইন
         if clean_key.startswith("AQ"):
             model_name = 'models/gemini-1.5-flash-latest'
         else:
@@ -97,10 +97,10 @@ if final_key:
         if test_resp:
             ai_ready = True
     except Exception as e:
-        # ফার্স্ট ট্রাই ফেইল করলে অল্টারনেটিভ গ্লোবাল মডেলে ফলব্যাক করবে
+        # ফার্স্ট ট্রাই ফেইল করলে অল্টারনেটিভ এন্ডপয়েন্টে ট্রাই করবে
         try:
-            model_name = 'models/text-embedding-004' # চেক করার জন্য জেনেরিক এন্ডপয়েন্ট
-            ai_model = genai.GenerativeModel(model_name='models/gemini-1.5-pro-latest')
+            model_name = 'models/gemini-1.5-pro-latest'
+            ai_model = genai.GenerativeModel(model_name=model_name)
             test_resp = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 5})
             if test_resp:
                 ai_ready = True
@@ -233,89 +233,4 @@ if st.session_state.search_history:
 st.write("---")
 
 # 🧠 ৫. মডিউল ২: মক টেস্ট ইঞ্জিন
-st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>", unsafe_allow_html=True)
-st.caption("💡 Select the exam difficulty level and generate 5 real exam-standard questions in English.")
-
-levels_list = ["Easy", "Medium", "Hard"]
-if st.session_state.current_level in levels_list:
-    selected_idx = levels_list.index(st.session_state.current_level)
-else:
-    selected_idx = 1
-
-exam_level = st.selectbox(
-    "🎯 Select Exam Difficulty Level:",
-    levels_list,
-    index=selected_idx
-)
-
-if exam_level != st.session_state.current_level or st.session_state.ai_questions is None:
-    st.session_state.current_level = exam_level
-    st.session_state.ai_questions = [
-        {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": f"[{exam_level}] What is the maximum number of edges in a simple graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
-        {"id": 2, "type": "MATH", "topic": "Combinatorics", "question": f"[{exam_level}] Find the number of distinct permutations of the letters in the word 'PUCSE'.", "options": [], "correct": "120"},
-        {"id": 3, "type": "MCQ", "topic": "Set Theory", "question": f"[{exam_level}] If set A has 3 elements, how many elements are in the power set P(A)?", "options": ["3", "6", "8", "9"], "correct": "8"},
-        {"id": 4, "type": "MATH", "topic": "Logic", "question": f"[{exam_level}] How many rows will a truth table have for a proposition containing 4 distinct variables?", "options": [], "correct": "16"},
-        {"id": 5, "type": "MCQ", "topic": "Relations", "question": f"[{exam_level}] A relation R on set A is reflexive if for all a in A, which condition holds?", "options": ["(a,a) belongs to R", "(a,b) implies (b,a)", "(a,b) and (b,c) implies (a,c)"], "correct": "(a,a) belongs to R"}
-    ]
-
-if not st.session_state.exam_submitted:
-    with st.form("dynamic_exam_form"):
-        st.info(f"⏱️ Exam Regulations: Answer all 5 [{exam_level}] level questions below. No negative marking.")
-        
-        for q in st.session_state.ai_questions:
-            st.markdown(f"#### **Question {q['id']}: {q['question']}**")
-            st.markdown(f"<span style='background-color:#334155; padding:2px 6px; border-radius:4px; color:#38bdf8; font-size:13px;'>🏷️ {q['topic']} | Type: {q['type']}</span>", unsafe_allow_html=True)
-            
-            if q['type'] == "MCQ":
-                st.session_state.user_answers[q['id']] = st.radio(
-                    "Select your answer:", q['options'], key=f"ai_q_{q['id']}"
-                )
-            else:
-                st.session_state.user_answers[q['id']] = st.text_input(
-                    "Type your numerical/final answer here:", key=f"ai_q_{q['id']}"
-                ).strip()
-            st.write("---")
-            
-        if st.form_submit_button("📤 Submit Mock Test"):
-            st.session_state.exam_submitted = True
-            st.rerun()
-
-elif st.session_state.exam_submitted:
-    st.success("🎯 Evaluation Completed! Check your interactive report below:")
-    
-    score = 0
-    total_q = len(st.session_state.ai_questions)
-    detailed_report = []
-    
-    for q in st.session_state.ai_questions:
-        u_ans = st.session_state.user_answers.get(q['id'], "")
-        is_correct = str(u_ans).lower() == str(q['correct']).lower()
-        if is_correct:
-            score += 1
-        detailed_report.append({
-            "Question": q['question'],
-            "Your Answer": u_ans,
-            "Correct Answer": q['correct'],
-            "Result": "✅ Correct" if is_correct else "❌ Incorrect"
-        })
-            
-    wrong = total_q - score
-    
-    fig = go.Figure(data=[go.Pie(
-        labels=['Correct', 'Incorrect'], 
-        values=[score, wrong], 
-        hole=.4,
-        marker_colors=['#4ade80', '#f43f5e']
-    )])
-    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=300)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    success_rate = (score / total_q) * 100
-    if score == 5:
-        grade, color, bg_card = "A+", "#4ade80", "rgba(74, 222, 128, 0.1)"
-        feedback = f"Outstanding performance! Your preparation for {exam_level} level questions is 100% perfect. Keep it up!"
-    elif score >= 4:
-        grade, color, bg_card = "A", "#38bdf8", "rgba(56, 189, 248, 0.1)"
-        feedback = f"Excellent job! Your core concepts are highly clear for {exam_level} level problems. Review the minor mistakes to target full marks."
-    elif score >= 2:
-        grade, color, bg_card = "B", "#fbbf2
+st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>
