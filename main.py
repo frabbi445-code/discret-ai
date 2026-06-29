@@ -59,71 +59,111 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ২. এপিআই কি কনফিগারেশন (বিকল্প মেকানিজম)
-# যদি st.secrets এ কী না থাকে, তাহলে এটি ড্যাশবোর্ড থেকে ইনপুট নেওয়া যাবে।
-try:
-    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-except Exception:
-    GEMINI_API_KEY = ""
+# ২. এপিআই কি কনফিগারেশন (যেকোনো একটি Secrets এ থাকলেই হবে)
+ANY_API_KEY = ""
+for secret_key in ["ANY_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "CLAUDE_API_KEY"]:
+    if secret_key in st.secrets:
+        ANY_API_KEY = st.secrets[secret_key]
+        break
 
 # সাইডবারে ম্যানুয়াল এপিআই কী ইনপুট বক্স
-st.sidebar.markdown("<h3 style='color: #38bdf8;'>🔑 API Configuration</h3>", unsafe_allow_html=True)
-manual_key = st.sidebar.text_input("Enter Valid Gemini API Key:", type="password", help="Enter a valid API key starting with AIzaSy...")
+st.sidebar.markdown("<h3 style='color: #38bdf8;'>🔑 Multi-Provider API Config</h3>", unsafe_allow_html=True)
+manual_key = st.sidebar.text_input(
+    "Enter OpenAI, Gemini or Claude Key:", 
+    type="password", 
+    help="Paste your API key here. The engine will auto-detect the provider!"
+)
 
 # ফাইনাল কি চুজ করা
-final_key = manual_key.strip() if manual_key.strip() else GEMINI_API_KEY.strip()
+final_key = manual_key.strip() if manual_key.strip() else ANY_API_KEY.strip()
 
+# অটো ডিটেকশন লজিক
+def detect_provider(api_key):
+    if not api_key:
+        return None
+    if api_key.startswith("AIzaSy"):
+        return "Gemini"
+    elif api_key.startswith("sk-ant-"):
+        return "Claude"
+    elif api_key.startswith("sk-") or api_key.startswith("sk-proj-"):
+        return "OpenAI"
+    return "Unknown"
+
+provider = detect_provider(final_key)
 ai_ready = False
 connection_error_msg = ""
-used_gateway = "v1beta API Gateway"
+used_gateway = "Not Connected"
 
-# জেমিনি REST API রিকোয়েস্ট ফাংশন 
-def call_gemini_rest(prompt_text, api_key):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    headers = {'Content-Type': 'application/json'}
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt_text}
-                ]
-            }
-        ]
-    }
-    
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=12)
-        if response.status_code == 200:
-            res_json = response.json()
-            if 'candidates' in res_json and len(res_json['candidates']) > 0:
-                text_out = res_json['candidates'][0]['content']['parts'][0]['text']
-                return text_out, True
-            else:
-                return "No text candidates returned.", False
-        elif response.status_code == 401:
-            return "Invalid API Key. Please use a valid Google AI Studio Key (starts with AIzaSy).", False
-        else:
-            return f"Error {response.status_code}: {response.text}", False
-    except Exception as exc:
-        return str(exc), False
+# ইউনিভার্সাল REST API কল ফাংশন
+def call_universal_ai(prompt_text, api_key, provider_name):
+    if provider_name == "OpenAI":
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'}
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": prompt_text}],
+            "temperature": 0.3
+        }
+        try:
+            res = requests.post(url, headers=headers, json=payload, timeout=15)
+            if res.status_code == 200:
+                return res.json()['choices'][0]['message']['content'], True
+            return f"OpenAI Error {res.status_code}: {res.text}", False
+        except Exception as e: return str(e), False
+
+    elif provider_name == "Gemini":
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        headers = {'Content-Type': 'application/json'}
+        payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
+        try:
+            res = requests.post(url, headers=headers, json=payload, timeout=15)
+            if res.status_code == 200:
+                return res.json()['candidates'][0]['content']['parts'][0]['text'], True
+            return f"Gemini Error {res.status_code}: {res.text}", False
+        except Exception as e: return str(e), False
+
+    elif provider_name == "Claude":
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            'content-type': 'application/json',
+            'x-api-key': api_key,
+            'anthropic-version': '2023-06-01'
+        }
+        payload = {
+            "model": "claude-3-5-haiku-latest",
+            "max_tokens": 2048,
+            "messages": [{"role": "user", "content": prompt_text}]
+        }
+        try:
+            res = requests.post(url, headers=headers, json=payload, timeout=15)
+            if res.status_code == 200:
+                return res.json()['content'][0]['text'], True
+            return f"Claude Error {res.status_code}: {res.text}", False
+        except Exception as e: return str(e), False
+        
+    return "Unsupported Key Format or Provider.", False
 
 # লাইভ কানেক্টিভিটি টেস্ট পিং কল
-if final_key:
-    test_output, is_ok = call_gemini_rest("Ping", final_key)
+if provider and provider != "Unknown":
+    test_output, is_ok = call_universal_ai("Ping", final_key, provider)
     if is_ok:
         ai_ready = True
-        used_gateway = "v1beta (Gemini 1.5 Flash)"
+        if provider == "OpenAI": used_gateway = "OpenAI (GPT-4o-mini)"
+        elif provider == "Gemini": used_gateway = "Gemini 1.5 Flash"
+        elif provider == "Claude": used_gateway = "Anthropic Claude 3.5 Haiku"
     else:
         connection_error_msg = test_output
+elif provider == "Unknown":
+    connection_error_msg = "Unknown API key format! Check if it's copied correctly."
 else:
-    connection_error_msg = "Please provide a valid Gemini API key in the sidebar or st.secrets."
+    connection_error_msg = "Please provide a valid OpenAI, Gemini, or Claude API key."
 
 # স্ট্যাটাস প্যানেল রেন্ডারিং
 if ai_ready:
     status_msg = f"🟢 Core AI Engine: READY TO PERFORM ({used_gateway} Gateway Connected)"
     st.markdown(f'<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">{status_msg}</div>', unsafe_allow_html=True)
 else:
-    status_msg = f"🔴 Core AI Engine: NOT CONNECTED<br><span style=\'font-size:12px; font-weight:normal; color:#fda4af !important;\'>Reason: {connection_error_msg}</span>"
+    status_msg = f"🔴 Core AI Engine: NOT CONNECTED<br><span style='font-size:12px; font-weight:normal; color:#fda4af !important;'>Reason: {connection_error_msg}</span>"
     st.markdown(f'<div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">{status_msg}</div>', unsafe_allow_html=True)
 
 st.title("🧠 DiscreteMind AI: Universal Course Solver")
@@ -166,7 +206,7 @@ with st.sidebar.container(border=True):
     st.write("**Institution:** Presidency University")
     st.write("**Department:** CSE")
     if ai_ready:
-        st.markdown("<span style='color: #4ade80; font-weight: bold;'>🔥 Status: READY</span>", unsafe_allow_html=True)
+        st.markdown(f"<span style='color: #4ade80; font-weight: bold;'>🔥 Status: ONLINE ({provider})</span>", unsafe_allow_html=True)
     else:
         st.markdown("<span style='color: #f43f5e; font-weight: bold;'>🔥 Status: OFFLINE</span>", unsafe_allow_html=True)
 
@@ -182,9 +222,9 @@ if st.button("Generate Answer", use_container_width=True):
         st.warning("⚠️ Please enter a question first!")
     else:
         with st.spinner("✨ Generating solution..."):
-            if ai_ready and final_key:
+            if ai_ready and final_key and provider:
                 prompt = f"You are an expert university professor in Discrete Mathematics. Provide a rigorous, textbook solution with LaTeX formatting for: {user_query}"
-                solution, is_ok = call_gemini_rest(prompt, final_key)
+                solution, is_ok = call_universal_ai(prompt, final_key, provider)
                 if is_ok:
                     st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
                     st.balloons()
