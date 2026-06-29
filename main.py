@@ -59,7 +59,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ২. এপিআই কি কনফিগারেশন (যেকোনো একটি Secrets এ থাকলেই হবে)
+# ২. এপিআই কি কনফিগারেশন 
 ANY_API_KEY = ""
 for secret_key in ["ANY_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "CLAUDE_API_KEY"]:
     if secret_key in st.secrets:
@@ -77,16 +77,24 @@ manual_key = st.sidebar.text_input(
 # ফাইনাল কি চুজ করা
 final_key = manual_key.strip() if manual_key.strip() else ANY_API_KEY.strip()
 
-# অটো ডিটেকশন লজিক
+# আপডেটেড অটো ডিটেকশন লজিক (নতুন AQ ফরম্যাট সহ)
 def detect_provider(api_key):
     if not api_key:
         return None
-    if api_key.startswith("AIzaSy"):
-        return "Gemini"
+    # OpenAI চেনার নিয়ম
+    if api_key.startswith("sk-") and not api_key.startswith("sk-ant-"):
+        return "OpenAI"
+    # Claude চেনার নিয়ম
     elif api_key.startswith("sk-ant-"):
         return "Claude"
-    elif api_key.startswith("sk-") or api_key.startswith("sk-proj-"):
-        return "OpenAI"
+    # যদি শুরুতে AIzaSy থাকে অথবা AQ দিয়ে শুরু হয়, তবে সেটি Gemini
+    elif api_key.startswith("AIzaSy") or api_key.startswith("AQ"):
+        return "Gemini"
+    
+    # ব্যাকআপ: কোনো কারণে ফরমেট ম্যাচ না করলে দৈর্ঘ্য দেখে জেমিনি গেস করা (জেমিনি কী সাধারণত ৩৯ বা তার বেশি ক্যারেক্টার হয় এবং sk- থাকে না)
+    if len(api_key) >= 35:
+        return "Gemini"
+        
     return "Unknown"
 
 provider = detect_provider(final_key)
@@ -112,6 +120,7 @@ def call_universal_ai(prompt_text, api_key, provider_name):
         except Exception as e: return str(e), False
 
     elif provider_name == "Gemini":
+        # নতুন হোক বা পুরাতন, জেমিনির এপিআই এন্ডপয়েন্ট একই থাকবে
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         headers = {'Content-Type': 'application/json'}
         payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
