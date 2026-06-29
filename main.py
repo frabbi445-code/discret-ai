@@ -123,7 +123,6 @@ if st.button("Generate Answer", use_container_width=True):
                 st.balloons()
                 st.success("🎉 Solution generated successfully!")
                 
-                # সিনট্যাক্স এরর দূর করার জন্য ট্রিপল কোট ব্যবহার করে সেফ কন্টেইনার তৈরি করা হলো
                 st.markdown('<div class="answer-box">', unsafe_allow_html=True)
                 st.markdown(solution)
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -151,24 +150,4 @@ st.caption("💡 Click below to generate 5 real exam-standard questions in Engli
 if st.button("🔄 Generate New AI Exam Paper", use_container_width=True) or st.session_state.ai_questions is None:
     if ai_model:
         with st.spinner("🤖 Fetching high-quality exam problems..."):
-            try:
-                quiz_prompt = """
-                Generate exactly 5 university-level Discrete Mathematics exam questions in English. 
-                Mix both conceptual MCQs and numerical mathematical problems that require direct numeric/word answers.
-                Provide the output strictly in the following JSON format so I can parse it in Python:
-                [
-                  {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": "What is the maximum number of edges in a simple graph with 5 vertices?", "options": ["5", "10", "15"], "correct": "10"},
-                  {"id": 2, "type": "MATH", "topic": "Combinatorics", "question": "Find the number of distinct permutations of the letters in the word 'PUCSE'.", "options": [], "correct": "120"}
-                ]
-                Do not include markdown wrappers like ```json. Just raw text.
-                """
-                response = ai_model.generate_content(quiz_prompt)
-                clean_json = response.text.replace("```json", "").replace("```", "").strip()
-                st.session_state.ai_questions = json.loads(clean_json)
-                st.session_state.user_answers = {}
-                st.session_state.exam_submitted = False
-            except Exception:
-                # ফেইলসেফ স্ট্যান্ডার্ড কোয়েশ্চেন প্যাক
-                st.session_state.ai_questions = [
-                    {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": "What is the maximum number of edges in a simple graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
-                    {"id": 2, "type": "MATH", "topic": "Combinatorics",
+            try
