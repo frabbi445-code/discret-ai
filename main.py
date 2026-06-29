@@ -225,12 +225,4 @@ if st.session_state.search_history:
         for idx, item in enumerate(st.session_state.search_history):
             st.markdown(f"**📝 Q:** {item['query']}")
             if st.checkbox("View Solution", key=f"hist_chk_{idx}"):
-                st.markdown('<div class="answer-box">', unsafe_allow_html=True)
-                st.markdown(item['sol'])
-                st.markdown('</div>', unsafe_allow_html=True)
-            st.write("---")
-
-st.write("---")
-
-# 🧠 ৫. মডিউল ২: মক টেস্ট ইঞ্জিন
-st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>
+                st.markdown('<div class
