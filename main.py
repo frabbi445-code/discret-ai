@@ -60,19 +60,28 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ২. এপিআই কি কনফিগারেশন এবং ক্লাউড এপিআই সামঞ্জস্যপূর্ণ মডেল সিলেকশন
+# ২. ডাবল-লেয়ার এপিআই কি কনফিগারেশন রুটিন (Secrets + Manual Input)
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
     GEMINI_API_KEY = None
 
+# সাইডবারে ব্যাকআপ ম্যানুয়াল এপিআই কী ইনপুট বক্স
+st.sidebar.markdown("<h3 style='color: #38bdf8;'>🔑 API Configuration</h3>", unsafe_allow_html=True)
+manual_key = st.sidebar.text_input("Enter Gemini API Key (If offline):", type="password", help="If st.secrets fails, paste your key here.")
+
+# যেকোনো একটি কী পেলেই কনফিগারেশন রান করবে
+final_key = manual_key.strip() if manual_key.strip() else (GEMINI_API_KEY if GEMINI_API_KEY else "")
+
 ai_ready = False
 ai_model = None
+connection_error_msg = ""
 
-if GEMINI_API_KEY:
-    clean_key = str(GEMINI_API_KEY).strip().replace('"', '').replace("'", "")
+if final_key:
+    clean_key = str(final_key).strip().replace('"', '').replace("'", "")
     try:
         genai.configure(api_key=clean_key)
+        # লেটেস্ট প্রোডাকশন স্টেবল মডেল
         model_name = 'gemini-1.5-flash'
         ai_model = genai.GenerativeModel(model_name=model_name)
         
@@ -80,14 +89,17 @@ if GEMINI_API_KEY:
         test_resp = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 5})
         if test_resp:
             ai_ready = True
-    except Exception:
+    except Exception as e:
         ai_ready = False
+        connection_error_msg = str(e)
+else:
+    connection_error_msg = "No API Key detected in st.secrets or manual input field."
 
 # সবার ওপরে দৃশ্যমান লাইভ ইন্ডিকেটর প্যানেল
 if ai_ready:
     st.markdown('<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: READY TO PERFORM (gemini-1.5-flash)</div>', unsafe_allow_html=True)
 else:
-    st.markdown('<div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">🔴 Core AI Engine: NOT CONNECTED</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">🔴 Core AI Engine: NOT CONNECTED<br><span style="font-size:12px; font-weight:normal; color:#fda4af !important;">Reason: {connection_error_msg}</span></div>', unsafe_allow_html=True)
 
 st.title("🧠 DiscreteMind AI: Universal Course Solver")
 st.subheader("Discrete Mathematics Engine & Interactive Exam Lab")
@@ -96,7 +108,7 @@ st.write("---")
 
 # 📊 ৩D গ্রাফ চার্ট
 st.markdown("<h3 style='color: #38bdf8;'>📊 Exam Analytics: Topic Importance Matrix</h3>", unsafe_allow_html=True)
-st.caption("💡 এটি একটি ইন্টারঅ্যাক্টিভ ৩D চার্ট। মাউস দিয়ে ড্র্যাগ করে বিভিন্ন অ্যাঙ্গেল থেকে পরীক্ষার টপিকগুলোর গুরুত্ব বিশ্লেষণ করা যাবে biographies।")
+st.caption("💡 এটি একটি ইন্টারঅ্যাক্টিভ ৩D চার্ট। মাউস দিয়ে ড্র্যাগ করে বিভিন্ন অ্যাঙ্গেল থেকে পরীক্ষার টপিকগুলোর গুরুত্ব বিশ্লেষণ করা যাবে।")
 
 topics_x = ['Set Theory', 'Logic', 'Graph Theory', 'Combinatorics', 'Recurrence']
 exams_y = ['Quiz 1', 'Quiz 2', 'Midterm', 'Assignment', 'Final Exam']
@@ -186,7 +198,7 @@ if st.button("Generate Answer", use_container_width=True):
                     st.markdown(solution)
                     st.markdown('</div>', unsafe_allow_html=True)
                 else:
-                    st.error("⚠️ Core AI Engine is currently not connected or API permissions are invalid.")
+                    st.error("⚠️ Core AI Engine is currently not connected. Please check your API Key in the sidebar or st.secrets.")
                 
             except Exception as e:
                 st.error(f"❌ Core AI Engine Execution Error: {e}")
@@ -208,7 +220,6 @@ st.write("---")
 st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>", unsafe_allow_html=True)
 st.caption("💡 Select the exam difficulty level and generate 5 real exam-standard questions in English.")
 
-# পূর্বের ব্র্যাকেটজনিত SyntaxError এড়াতে ইনডেক্স আগে ভেরিয়েবলে ডিফাইন করা হলো
 levels_list = ["Easy", "Medium", "Hard"]
 if st.session_state.current_level in levels_list:
     selected_idx = levels_list.index(st.session_state.current_level)
@@ -221,7 +232,6 @@ exam_level = st.selectbox(
     index=selected_idx
 )
 
-# ডিফিকাল্টি লেভেল চেঞ্জ ট্র্যাকিং
 if exam_level != st.session_state.current_level or st.session_state.ai_questions is None:
     st.session_state.current_level = exam_level
     st.session_state.ai_questions = [
