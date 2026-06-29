@@ -4,7 +4,6 @@ import time
 import pandas as pd
 import json
 import plotly.graph_objects as go
-import numpy as np
 
 # ১. পেজ সেটিংস ও উচ্চ-কন্ট্রাস্ট মার্জিত থিম
 st.set_page_config(page_title="DiscreteMind AI", page_icon="🧠", layout="centered")
@@ -61,29 +60,30 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ২. এপিআই কি কনফিগারেশন ও রিয়েল-টাইম লাইভ টেস্ট পিং লজিক (১০০% বুলেটপ্রুফ)
+# ২. এপিআই কি কনফিগারেশন এবং ক্লাউড এপিআই সামঞ্জস্যপূর্ণ মডেল সিলেকশন
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
     GEMINI_API_KEY = None
 
 ai_ready = False
+# AQ. ফরম্যাট এবং ওঅথ কি রুটিন হ্যান্ডলিং লজিক
 if GEMINI_API_KEY:
     try:
         genai.configure(api_key=GEMINI_API_KEY)
-        # ইউনিভার্সাল ও বেস মডেল সিলেক্ট করা হলো যা AQ কি-র সাথে সামঞ্জস্যপূর্ণ
-        ai_model = genai.GenerativeModel(model_name='gemini-pro')
+        # ক্লাউড প্রোজেক্ট কিগুলোর জন্য টেক্সট-ভিত্তিক স্ট্যাবল এআই কোর সিলেক্ট করা হলো
+        ai_model = genai.GenerativeModel('models/gemini-1.0-pro')
         
-        # 🎯 ট্রিক: সার্ভারে একটি রিয়েল ২-টোকেন টেস্ট কল পাঠিয়ে কানেকশন ও কি পারমিশন ১০০% যাচাই করা হচ্ছে
-        test_response = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 2})
-        if test_response.text:
+        # কি ভ্যালিডেশন টেস্ট পিং
+        test_resp = ai_model.generate_content("Ping", generation_config={"max_output_tokens": 2})
+        if test_resp.text:
             ai_ready = True
     except Exception:
         ai_ready = False
 else:
     ai_model = None
 
-# সবার ওপরে দৃশ্যমান লাইভ ইন্ডিকেটর প্যানেল (কানেকশন ও কি এরর এখন সরাসরি ট্র্যাক হবে)
+# সবার ওপরে দৃশ্যমান লাইভ ইন্ডিকেটর প্যানেল
 if ai_ready:
     st.markdown('<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: READY TO PERFORM</div>', unsafe_allow_html=True)
 else:
@@ -94,7 +94,7 @@ st.subheader("Discrete Mathematics Engine & Interactive Exam Lab")
 st.write("Presidency University | CSE Dept | Academic Edition")
 st.write("---")
 
-# 📊 ৩D গ্রাফ চার্ট: সুনির্দিষ্ট ৫x৫ ডাইমেনশন ম্যাট্রিক্স
+# 📊 ৩D গ্রাফ চার্ট
 st.markdown("<h3 style='color: #38bdf8;'>📊 Exam Analytics: Topic Importance Matrix</h3>", unsafe_allow_html=True)
 st.caption("💡 এটি একটি ইন্টারঅ্যাক্টিভ ৩D চার্ট। মাউস দিয়ে ড্র্যাগ করে বিভিন্ন অ্যাঙ্গেল থেকে পরীক্ষার টপিকগুলোর গুরুত্ব বিশ্লেষণ করা যাবে।")
 
@@ -263,7 +263,6 @@ elif st.session_state.exam_submitted:
             
     wrong = total_q - score
     
-    # প্লটলি পাই চার্ট
     fig = go.Figure(data=[go.Pie(
         labels=['Correct', 'Incorrect'], 
         values=[score, wrong], 
@@ -273,7 +272,6 @@ elif st.session_state.exam_submitted:
     fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=300)
     st.plotly_chart(fig, use_container_width=True)
     
-    # ডাইনামিক কমেন্ট ও ফিডব্যাক গ্রেড কার্ড
     success_rate = (score / total_q) * 100
     if score == 5:
         grade, color, bg_card = "A+", "#4ade80", "rgba(74, 222, 128, 0.1)"
