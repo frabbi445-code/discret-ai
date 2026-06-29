@@ -114,16 +114,31 @@ def call_universal_ai(prompt_text, api_key, provider_name):
         except Exception as e: return str(e), False
 
     elif provider_name == "Gemini":
-        # ফিক্স: v1 গেটওয়ে এবং gemini-1.5-flash-latest মডেল ব্যবহার করা হয়েছে যা নতুন AQ ফরম্যাট সাপোর্ট করে
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
-        headers = {'Content-Type': 'application/json'}
-        payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
-        try:
-            res = requests.post(url, headers=headers, json=payload, timeout=15)
-            if res.status_code == 200:
-                return res.json()['candidates'][0]['content']['parts'][0]['text'], True
-            return f"Gemini Error {res.status_code}: {res.text}", False
-        except Exception as e: return str(e), False
+        # ট্রাই ১: নতুন AQ কী-র জন্য ইউনিভার্সাল v1 এবং gemini-2.5-flash মডেল ট্রাই করা
+        gateways = [
+            "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        ]
+        
+        last_error = ""
+        for url_template in gateways:
+            url = f"{url_template}?key={api_key}"
+            headers = {'Content-Type': 'application/json'}
+            payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
+            try:
+                res = requests.post(url, headers=headers, json=payload, timeout=12)
+                if res.status_code == 200:
+                    return res.json()['candidates'][0]['content']['parts'][0]['text'], True
+                else:
+                    last_error = f"Status {res.status_code}: {res.text}"
+            except Exception as e:
+                last_error = str(e)
+        
+        # যদি সব গেটওয়েই ফেল করে (যেমন 404), তবে বুঝতে হবে API Key টিতে Gemini এনাবলড নেই
+        if "404" in last_error or "NOT_FOUND" in last_error:
+            return "Gemini Error 404: Your API Key is valid, but 'Generative Language API' service is not enabled or allowed on this Cloud Key. Please generate a fresh key from Google AI Studio (aistudio.google.com).", False
+            
+        return last_error, False
 
     elif provider_name == "Claude":
         url = "https://api.anthropic.com/v1/messages"
@@ -152,7 +167,7 @@ if provider and provider != "Unknown":
     if is_ok:
         ai_ready = True
         if provider == "OpenAI": used_gateway = "OpenAI (GPT-4o-mini)"
-        elif provider == "Gemini": used_gateway = "Gemini 1.5 Flash (v1)"
+        elif provider == "Gemini": used_gateway = "Gemini Engine (Auto-Route)"
         elif provider == "Claude": used_gateway = "Anthropic Claude 3.5 Haiku"
     else:
         connection_error_msg = test_output
