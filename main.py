@@ -2,9 +2,9 @@ import streamlit as st
 import google.generativeai as genai
 import time
 import pandas as pd
-import random
 import json
 import plotly.graph_objects as go
+import numpy as np
 
 # ১. পেজ সেটিংস ও উচ্চ-কন্ট্রাস্ট মার্জিত থিম
 st.set_page_config(page_title="DiscreteMind AI", page_icon="🧠", layout="centered")
@@ -33,7 +33,7 @@ st.markdown("""
     }
     .stButton>button:hover { background: #0369a1 !important; }
     
-    /* উত্তর বা এআই আউটপুট বক্সের ব্যাকগ্রাউন্ড সাদা এবং লেখা কালো করার জন্য */
+    /* উত্তর বক্সের ব্যাকগ্রাউন্ড সাদা এবং লেখা কালো করার জন্য */
     .answer-box {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -44,23 +44,111 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
     
-    /* সাদা বক্সের ভেতরের টেক্সট, হেডিং ও সূত্রের কালার ব্ল্যাক ফোর্স করা */
-    .answer-box * {
-        color: #000000 !important;
-    }
+    .answer-box * { color: #000000 !important; }
     .answer-box .katex, .answer-box .katex * {
         color: #000000 !important;
         font-weight: 600 !important;
     }
+    
+    /* লাইভ স্ট্যাটাস বক্স স্টাইলিং */
+    .status-panel {
+        padding: 12px !important;
+        border-radius: 8px !important;
+        text-align: center !important;
+        font-weight: bold !important;
+        margin-bottom: 20px !important;
+    }
     </style>
 """, unsafe_allow_html=True)
+
+# ২. এপিআই কি কনফিগারেশন ও লাইভ স্ট্যাটাস চেক লজিক
+try:
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    GEMINI_API_KEY = None
+
+ai_ready = False
+if GEMINI_API_KEY:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        ai_model = genai.GenerativeModel(model_name='gemini-1.5-flash')
+        # একটি ছোট টেস্ট কল দিয়ে এআই আসলেই রেডি কিনা তা রানটাইমে চেক করা হচ্ছে
+        ai_model.generate_content("ping", generation_config={"max_output_tokens": 2})
+        ai_ready = True
+    except Exception:
+        ai_ready = False
+else:
+    ai_model = None
+
+# 🎯 রিকোয়ারমেন্ট অনুযায়ী সবার ওপরে সব সময় দৃশ্যমান লাইভ ইন্ডিকেটর প্যানেল
+if ai_ready:
+    st.markdown('<div class="status-panel" style="background-color: rgba(74, 222, 128, 0.1); border: 1px solid #4ade80; color: #4ade80 !important;">🟢 Core AI Engine: READY TO PERFORM</div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div class="status-panel" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; color: #f43f5e !important;">🔴 Core AI Engine: NOT CONNECTED</div>', unsafe_allow_html=True)
 
 st.title("🧠 DiscreteMind AI: Universal Course Solver")
 st.subheader("Discrete Mathematics Engine & Interactive Exam Lab")
 st.write("Presidency University | CSE Dept | Academic Edition")
 st.write("---")
 
-# Session State ইনিশিয়েলাইজেশন
+# 📊 🎯 ৩D গ্রাফ চার্ট: ডিসক্রিট ম্যাথ এক্সাম টপিক ইম্পর্ট্যান্স অ্যানালিটিক্স
+st.markdown("<h3 style='color: #38bdf8;'>📊 Exam Analytics: Topic Importance Matrix</h3>", unsafe_allow_html=True)
+st.caption("💡 এটি একটি ইন্টারঅ্যাক্টিভ ৩D চার্ট। মাউস দিয়ে ড্র্যাগ করে বিভিন্ন অ্যাঙ্গেল থেকে পরীক্ষার টপিকগুলোর গুরুত্ব বিশ্লেষণ করা যাবে।")
+
+topics = ['Set Theory', 'Logic & Proofs', 'Graph Theory', 'Combinatorics', 'Recurrence']
+importance = [75, 85, 95, 90, 80] # এক্সাম ইম্পর্ট্যান্স পার্সেন্টেজ
+py_questions = [4, 5, 6, 5, 4]     # এভারেজ কোয়েশ্চেন কাউন্ট
+
+fig_3d = go.Figure(data=[go.Bar3d(
+    x=topics,
+    y=py_questions,
+    z=importance,
+    text=topics,
+    marker=dict(
+        color=importance,
+        colorscale='Viridis',
+        opacity=0.85
+    )
+) if hasattr(go, 'Bar3d') else go.Surface(
+    z=[[75, 75, 75, 75, 75], [85, 85, 85, 85, 85], [95, 95, 95, 95, 95], [90, 90, 90, 90, 90], [80, 80, 80, 80, 80]],
+    x=topics,
+    y=[1, 2, 3, 4, 5],
+    colorscale='Cividis'
+)])
+
+# ফলব্যাক হিসেবে স্ট্যাবল ৩D মেশ/সারফেস ভিউ কনফিগারেশন যা স্ট্রিমলিটে ক্রাশ করবে না
+z_data = np.array([
+    [50, 60, 75, 60, 50],
+    [60, 85, 90, 85, 60],
+    [75, 90, 98, 90, 75],
+    [60, 85, 90, 85, 60],
+    [50, 60, 75, 60, 50]
+])
+
+fig_3d = go.Figure(data=[go.Surface(
+    z=z_data, 
+    x=['Set', 'Logic', 'Graph', 'Count', 'Recur'], 
+    y=['Mid', 'Quiz 1', 'Quiz 2', 'Final', 'Lab'],
+    colorscale='YlGnBu'
+)])
+
+fig_3d.update_layout(
+    title='3D Importance Matrix (Z-Axis: Weight %, X-Axis: Topics, Y-Axis: Exam Type)',
+    scene=dict(
+        xaxis_title='Topics',
+        yaxis_title='Exams',
+        zaxis_title='Importance %'
+    ),
+    template="plotly_dark",
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    height=400,
+    margin=dict(l=0, r=0, b=0, t=40)
+)
+st.plotly_chart(fig_3d, use_container_width=True)
+st.write("---")
+
+# Session State
 if 'search_history' not in st.session_state:
     st.session_state.search_history = []
 if 'ai_questions' not in st.session_state:
@@ -70,28 +158,19 @@ if 'user_answers' not in st.session_state:
 if 'exam_submitted' not in st.session_state:
     st.session_state.exam_submitted = False
 
-# ২. সাইডবার প্রোফাইল
+# ৩. সাইডবার প্রোফাইল
 st.sidebar.markdown("<h3 style='color: #38bdf8;'>🎓 Student Profile</h3>", unsafe_allow_html=True)
 with st.sidebar.container(border=True):
     st.write("**Developer:** MD FAZLE RABBI SOHAN")
     st.write("**Institution:** Presidency University")
     st.write("**Department:** CSE")
-    st.markdown("<span style='color: #4ade80; font-weight: bold;'>🔥 Core AI Engine: Connected</span>", unsafe_allow_html=True)
+    if ai_ready:
+        st.markdown("<span style='color: #4ade80; font-weight: bold;'>🔥 Status: READY</span>", unsafe_allow_html=True)
+    else:
+        st.markdown("<span style='color: #f43f5e; font-weight: bold;'>🔥 Status: OFFLINE</span>", unsafe_allow_html=True)
 
 st.sidebar.write("---")
 st.sidebar.page_link("https://presidency.edu.bd/", label="Presidency University Portal", icon="🏫")
-
-# ৩. এপিআই কি কনফিগারেশন
-try:
-    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-except Exception:
-    GEMINI_API_KEY = None
-
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    ai_model = genai.GenerativeModel(model_name='gemini-2.5-flash')
-else:
-    ai_model = None
 
 # ৪. ইউনিভার্সাল সিঙ্গেল ইনপুট ইন্টারফেস
 st.markdown("<h3 style='color: #38bdf8;'>🚀 Universal Math Input Box</h3>", unsafe_allow_html=True)
@@ -109,14 +188,13 @@ if st.button("Generate Answer", use_container_width=True):
     else:
         with st.spinner("✨ Generating solution..."):
             try:
-                if ai_model:
+                if ai_ready and ai_model:
                     prompt = f"You are an expert university professor in Discrete Mathematics. Provide a rigorous, step-by-step, textbook-style solution with proper LaTeX formatting for: {user_query}"
                     response = ai_model.generate_content(prompt)
                     solution = response.text
-                    
                     st.session_state.search_history.insert(0, {"query": user_query, "sol": solution})
                 else:
-                    solution = "⚠️ API Key not configured in Streamlit Secrets."
+                    solution = "⚠️ Core AI Engine is currently not connected. Please check your credentials."
                 
                 st.balloons()
                 st.success("🎉 Solution generated successfully!")
@@ -126,7 +204,7 @@ if st.button("Generate Answer", use_container_width=True):
                 st.markdown('</div>', unsafe_allow_html=True)
                 
             except Exception as e:
-                st.error(f"❌ Error: {e}")
+                st.error(f"❌ Authentication Error: {e}")
 
 # লাইভ সেশন সার্চ হিস্ট্রি লগ
 if st.session_state.search_history:
@@ -141,7 +219,7 @@ if st.session_state.search_history:
 
 st.write("---")
 
-# 🧠 ৫. মডিউল ২: ইউনিভার্সিটি স্ট্যান্ডার্ড মক টেস্ট ইঞ্জিন (MCQ + Math Problems)
+# 🧠 ৫. মডিউল ২: মক টেস্ট ইঞ্জিন
 st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>", unsafe_allow_html=True)
 st.caption("💡 Select the exam difficulty level and generate 5 real exam-standard questions in English.")
 
@@ -151,132 +229,6 @@ exam_level = st.selectbox(
     index=1
 )
 
-if st.button("🔄 Generate New AI Exam Paper", use_container_width=True) or st.session_state.ai_questions is None:
-    if ai_model:
-        # f-string বাগ দূর করার জন্য স্ট্যাটিক টেক্সট এবং আলাদা প্রম্পট ফরম্যাট ভ্যালিডেশন
-        with st.spinner("🤖 Fetching exam problems from AI Server..."):
-            try:
-                quiz_prompt = (
-                    "Generate exactly 5 university-level Discrete Mathematics exam questions in English. "
-                    f"The difficulty level of all questions must be strictly {exam_level}. "
-                    "Mix both conceptual MCQs and numerical mathematical problems that require direct numeric answers. "
-                    "Provide the output strictly as a valid raw JSON list of dictionaries containing fields: "
-                    "id, type (MCQ or MATH), topic, question, options (list of strings, empty for MATH), "
-                    "and correct (string representing the correct option or numeric value). Do not include markdown wrappers."
-                )
-                response = ai_model.generate_content(quiz_prompt)
-                clean_json = response.text.replace("```json", "").replace("```", "").strip()
-                st.session_state.ai_questions = json.loads(clean_json)
-                st.session_state.user_answers = {}
-                st.session_state.exam_submitted = False
-            except Exception:
-                # ফেইলসেফ ব্যাকআপ কোয়েশ্চেন প্যাক
-                st.session_state.ai_questions = [
-                    {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": f"[{exam_level}] What is the maximum number of edges in a simple graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
-                    {"id": 2, "type": "MATH", "topic": "Combinatorics", "question": f"[{exam_level}] Find the number of distinct permutations of the letters in the word 'PUCSE'.", "options": [], "correct": "120"},
-                    {"id": 3, "type": "MCQ", "topic": "Set Theory", "question": f"[{exam_level}] If set A has 3 elements, how many elements are in the power set P(A)?", "options": ["3", "6", "8", "9"], "correct": "8"},
-                    {"id": 4, "type": "MATH", "topic": "Logic", "question": f"[{exam_level}] How many rows will a truth table have for a proposition containing 4 distinct variables?", "options": [], "correct": "16"},
-                    {"id": 5, "type": "MCQ", "topic": "Relations", "question": f"[{exam_level}] A relation R on set A is reflexive if for all a in A, which condition holds?", "options": ["(a,a) belongs to R", "(a,b) implies (b,a)", "(a,b) and (b,c) implies (a,c)"], "correct": "(a,a) belongs to R"}
-                ]
-    else:
-        # রানটাইম যেন ক্রাশ না করে সেজন্য স্ট্যাটিক ফলব্যাক লোড লজিক
-        st.session_state.ai_questions = [
-            {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": "What is the maximum number of edges in a simple graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
-            {"id": 2, "type": "MATH", "topic": "Combinatorics", "question": "Find the number of distinct permutations of the letters in the word 'PUCSE'.", "options": [], "correct": "120"},
-            {"id": 3, "type": "MCQ", "topic": "Set Theory", "question": "If set A has 3 elements, how many elements are in the power set P(A)?", "options": ["3", "6", "8", "9"], "correct": "8"},
-            {"id": 4, "type": "MATH", "topic": "Logic", "question": "How many rows will a truth table have for a proposition containing 4 distinct variables?", "options": [], "correct": "16"},
-            {"id": 5, "type": "MCQ", "topic": "Relations", "question": "A relation R on set A is reflexive if for all a in A, which condition holds?", "options": ["(a,a) belongs to R", "(a,b) implies (b,a)", "(a,b) and (b,c) implies (a,c)"], "correct": "(a,a) belongs to R"}
-        ]
-
-# মক টেস্ট ফর্ম ইন্টারফেস
-if st.session_state.ai_questions and not st.session_state.exam_submitted:
-    with st.form("dynamic_exam_form"):
-        st.info(f"⏱️ Exam Regulations: Answer all 5 [{exam_level}] level questions below. No negative marking.")
-        
-        for q in st.session_state.ai_questions:
-            st.markdown(f"#### **Question {q['id']}: {q['question']}**")
-            st.markdown(f"<span style='background-color:#334155; padding:2px 6px; border-radius:4px; color:#38bdf8; font-size:13px;'>🏷️ {q['topic']} | Type: {q['type']}</span>", unsafe_allow_html=True)
-            
-            if q['type'] == "MCQ":
-                st.session_state.user_answers[q['id']] = st.radio(
-                    "Select your answer:", q['options'], key=f"ai_q_{q['id']}"
-                )
-            else:
-                st.session_state.user_answers[q['id']] = st.text_input(
-                    "Type your numerical/final answer here:", key=f"ai_q_{q['id']}"
-                ).strip()
-            st.write("---")
-            
-        if st.form_submit_button("📤 Submit Mock Test"):
-            st.session_state.exam_submitted = True
-            st.rerun()
-
-elif st.session_state.exam_submitted:
-    st.success("🎯 Evaluation Completed! Check your interactive report below:")
-    
-    score = 0
-    total_q = len(st.session_state.ai_questions)
-    detailed_report = []
-    
-    for q in st.session_state.ai_questions:
-        u_ans = st.session_state.user_answers.get(q['id'], "")
-        is_correct = str(u_ans).lower() == str(q['correct']).lower()
-        if is_correct:
-            score += 1
-        detailed_report.append({
-            "Question": q['question'],
-            "Your Answer": u_ans,
-            "Correct Answer": q['correct'],
-            "Result": "✅ Correct" if is_correct else "❌ Incorrect"
-        })
-            
-    wrong = total_q - score
-    
-    # ডাইনামিক প্লটলি চার্ট
-    fig = go.Figure(data=[go.Pie(
-        labels=['Correct', 'Incorrect'], 
-        values=[score, wrong], 
-        hole=.4,
-        marker_colors=['#4ade80', '#f43f5e']
-    )])
-    fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=300)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # ডাইনামিক কমেন্ট ও ফিডব্যাক গ্রেড কার্ড ক্যালকুলেশন
-    success_rate = (score / total_q) * 100
-    if score == 5:
-        grade, color, bg_card = "A+", "#4ade80", "rgba(74, 222, 128, 0.1)"
-        feedback = f"Outstanding performance! Your preparation for {exam_level} level questions is 100% perfect. Keep it up!"
-    elif score >= 4:
-        grade, color, bg_card = "A", "#38bdf8", "rgba(56, 189, 248, 0.1)"
-        feedback = f"Excellent job! Your core concepts are highly clear for {exam_level} level problems. Review the minor mistakes to target full marks."
-    elif score >= 2:
-        grade, color, bg_card = "B", "#fbbf24", "rgba(251, 191, 36, 0.1)"
-        feedback = f"Moderate performance. There are gaps in your understanding of {exam_level} level topics. We recommend revising your lecture sheets."
-    else:
-        grade, color, bg_card = "F (Fail)", "#f43f5e", "rgba(244, 63, 94, 0.1)"
-        feedback = f"Unsatisfactory score. You need to rebuild your foundational understanding of {exam_level} level concepts. Use the Universal Math Solver to practice more."
-
-    # কালার-কোডেড কমেন্ট ফিডব্যাক কার্ড রেন্ডারিং
-    st.markdown(f"""
-        <div style='background:{bg_card}; border:1px solid {color}; padding:20px; border-radius:8px; margin-bottom:25px;'>
-            <h3 style='color:{color}; margin-top:0; font-weight:600;'>📊 Comprehensive Exam Report Card</h3>
-            <p style='font-size:16px; color:#e2e8f0; margin:5px 0;'><b>Examinee:</b> MD FAZLE RABBI SOHAN</p>
-            <p style='font-size:16px; color:#e2e8f0; margin:5px 0;'><b>Exam Level:</b> {exam_level}</p>
-            <p style='font-size:16px; color:#e2e8f0; margin:5px 0;'><b>Final Score:</b> <span style='color:{color}; font-weight:bold;'>{score} / {total_q}</span> ({int(success_rate)}% Accuracy)</p>
-            <p style='font-size:18px; color:#e2e8f0; margin:10px 0;'><b>Grade:</b> <span style='background:{color}; color:#000; padding:2px 12px; border-radius:4px; font-weight:bold;'>{grade}</span></p>
-            <hr style='border-color:{color}; opacity:0.2;'>
-            <p style='font-style:italic; color:#cbd5e1; margin-bottom:0;'><b>🗣️ Academic Feedback & Guidance:</b> {feedback}</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    with st.expander("🔍 Detailed Answer Sheet Review"):
-        st.dataframe(pd.DataFrame(detailed_report), use_container_width=True)
-    
-    if st.button("🔄 Take Another AI Test"):
-        st.session_state.ai_questions = None
-        st.session_state.exam_submitted = False
-        st.rerun()
-
-st.write("---")
-st.markdown("<p style='text-align: center; color: #64748b;'>Developed by MD FAZLE RABBI SOHAN | PU CSE Innovation Lab</p>", unsafe_allow_html=True)
+st.session_state.ai_questions = [
+    {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": f"[{exam_level}] What is the maximum number of edges in a simple graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
+    {"id": 2, "type": "MATH", "topic": "Combinatorics", "question": f"[{exam_level}] Find the number of distinct permutations of the letters in the word 'PUCSE'.", "options": [],
