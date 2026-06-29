@@ -34,7 +34,7 @@ st.markdown("""
     }
     .stButton>button:hover { background: #0369a1 !important; }
     
-    /* 🎯 বিশেষ ফিক্স: উত্তর বা এআই আউটপুট বক্সের ব্যাকগ্রাউন্ড সাদা এবং লেখা কালো করার জন্য */
+    /* উত্তর বা এআই আউটপুট বক্সের ব্যাকগ্রাউন্ড সাদা এবং লেখা কালো করার জন্য */
     .answer-box {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -77,4 +77,98 @@ with st.sidebar.container(border=True):
     st.write("**Developer:** MD FAZLE RABBI SOHAN")
     st.write("**Institution:** Presidency University")
     st.write("**Department:** CSE")
-    st.markdown("<span
+    st.markdown("<span style='color: #4ade80; font-weight: bold;'>🔥 Core AI Engine: Connected</span>", unsafe_allow_html=True)
+
+st.sidebar.write("---")
+st.sidebar.page_link("https://presidency.edu.bd/", label="Presidency University Portal", icon="🏫")
+
+# ৩. এপিআই কি কনফিগারেশন
+try:
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    GEMINI_API_KEY = None
+
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    ai_model = genai.GenerativeModel(model_name='gemini-2.5-flash')
+else:
+    ai_model = None
+
+# ৪. ইউনিভার্সাল সিঙ্গেল ইনপুট ইন্টারফেস
+st.markdown("<h3 style='color: #38bdf8;'>🚀 Universal Math Input Box</h3>", unsafe_allow_html=True)
+st.caption("💡 Enter any Discrete Mathematics problem below (Truth Tables, Graphs, Sets, Counting, Recurrence):")
+
+user_query = st.text_area(
+    "📝 Type or paste your question here:",
+    placeholder="e.g., Find the explicit formula for a_n = 5a_{n-1} - 6a_{n-2}...",
+    height=110
+)
+
+if st.button("Generate Answer", use_container_width=True):
+    if not user_query.strip():
+        st.warning("⚠️ Please enter a question first!")
+    else:
+        with st.spinner("✨ Generating solution..."):
+            try:
+                if ai_model:
+                    prompt = f"You are an expert university professor in Discrete Mathematics. Provide a rigorous, step-by-step, textbook-style solution with proper LaTeX formatting for: {user_query}"
+                    response = ai_model.generate_content(prompt)
+                    solution = response.text
+                    
+                    timestamp = datetime.now().strftime("%H:%M:%S")
+                    st.session_state.search_history.insert(0, {"time": timestamp, "query": user_query, "sol": solution})
+                else:
+                    solution = "⚠️ API Key not configured in Streamlit Secrets."
+                
+                st.balloons()
+                st.success("🎉 Solution generated successfully!")
+                
+                # সিনট্যাক্স এরর দূর করার জন্য ট্রিপল কোট ব্যবহার করে সেফ কন্টেইনার তৈরি করা হলো
+                st.markdown('<div class="answer-box">', unsafe_allow_html=True)
+                st.markdown(solution)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
+
+# লাইভ সেশন সার্চ হিস্ট্রি লগ
+if st.session_state.search_history:
+    with st.expander("📜 Live Session Search Log"):
+        for idx, item in enumerate(st.session_state.search_history):
+            st.markdown(f"**🕒 [{item['time']}] Q:** {item['query']}")
+            if st.checkbox("View Solution", key=f"hist_chk_{idx}"):
+                st.markdown('<div class="answer-box">', unsafe_allow_html=True)
+                st.markdown(item['sol'])
+                st.markdown('</div>', unsafe_allow_html=True)
+            st.write("---")
+
+st.write("---")
+
+# 🧠 ৫. মডিউল ২: ইউনিভার্সিটি স্ট্যান্ডার্ড মক টেস্ট ইঞ্জিন (MCQ + Math Problems)
+st.markdown("<h3 style='color: #38bdf8;'>📝 Interactive Mid/Final Mock Test</h3>", unsafe_allow_html=True)
+st.caption("💡 Click below to generate 5 real exam-standard questions in English, including critical mathematical calculations.")
+
+if st.button("🔄 Generate New AI Exam Paper", use_container_width=True) or st.session_state.ai_questions is None:
+    if ai_model:
+        with st.spinner("🤖 Fetching high-quality exam problems..."):
+            try:
+                quiz_prompt = """
+                Generate exactly 5 university-level Discrete Mathematics exam questions in English. 
+                Mix both conceptual MCQs and numerical mathematical problems that require direct numeric/word answers.
+                Provide the output strictly in the following JSON format so I can parse it in Python:
+                [
+                  {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": "What is the maximum number of edges in a simple graph with 5 vertices?", "options": ["5", "10", "15"], "correct": "10"},
+                  {"id": 2, "type": "MATH", "topic": "Combinatorics", "question": "Find the number of distinct permutations of the letters in the word 'PUCSE'.", "options": [], "correct": "120"}
+                ]
+                Do not include markdown wrappers like ```json. Just raw text.
+                """
+                response = ai_model.generate_content(quiz_prompt)
+                clean_json = response.text.replace("```json", "").replace("```", "").strip()
+                st.session_state.ai_questions = json.loads(clean_json)
+                st.session_state.user_answers = {}
+                st.session_state.exam_submitted = False
+            except Exception:
+                # ফেইলসেফ স্ট্যান্ডার্ড কোয়েশ্চেন প্যাক
+                st.session_state.ai_questions = [
+                    {"id": 1, "type": "MCQ", "topic": "Graph Theory", "question": "What is the maximum number of edges in a simple graph with 6 vertices?", "options": ["6", "12", "15", "30"], "correct": "15"},
+                    {"id": 2, "type": "MATH", "topic": "Combinatorics",
