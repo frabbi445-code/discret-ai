@@ -123,21 +123,21 @@ def call_universal_ai(prompt_text, api_key, provider_name):
             headers = {'Content-Type': 'application/json'}
             payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
             try:
-                # --- [FIXED] এখানে timeout বাড়িয়ে 30 করা হয়েছে এবং Timeout হ্যান্ডলার যোগ করা হয়েছে ---
+                # টাইমআউট বাড়িয়ে ৩০ সেকেন্ড করা হয়েছে যাতে 'Read timed out' এরর সহজে না আসে
                 res = requests.post(url, headers=headers, json=payload, timeout=30)
                 
                 if res.status_code == 429:
-                    return "⚠️ Gemini API-এর ফ্রি লিমিট সাময়িক শেষ! অনুগ্রহ করে ১ মিনিট পর আবার চেষ্টা করুন।", False
+                    return "⚠️ Gemini API-এর ফ্রি লিমিট (Quota Exceeded) সাময়িক শেষ! অনুগ্রহ করে ১ মিনিট পর আবার চেষ্টা করুন।", False
                 
                 if res.status_code == 200:
                     return res.json()['candidates'][0]['content']['parts'][0]['text'], True
                 
             except requests.exceptions.Timeout:
-                continue # প্রথম গেটওয়ে টাইমআউট হলে দ্বিতীয়টি ট্রাই করবে
+                continue  # প্রথম ইউআরএল কাজ না করলে বা টাইমআউট হলে পরের ব্যাকআপ ইউআরএল চেষ্টা করবে
             except Exception as e: 
                 return f"কানেকশন এরর: {str(e)}", False
                 
-        return "⚠️ Gemini সার্ভার থেকে নির্ধারিত সময়ে উত্তর পাওয়া যায়নি (Timeout)। আপনার ইন্টারনেট কানেকশন বা সার্ভার বিজি থাকতে পারে, দয়া করে আবার সাবমিট করুন।", False
+        return "⚠️ Gemini সার্ভার থেকে উত্তর পেতে ব্যর্থ (Timeout)। সার্ভার অতিরিক্ত বিজি বা আপনার ইন্টারনেট সাময়িক স্লো হতে পারে। দয়া করে আবার চেষ্টা করুন।", False
 
     elif provider_name == "Claude":
         url = "https://api.anthropic.com/v1/messages"
@@ -160,10 +160,10 @@ def call_universal_ai(prompt_text, api_key, provider_name):
             return "⚠️ Claude সার্ভার রেসপন্স করতে অনেক সময় নিচ্ছে (Timeout)।", False
         except Exception as e: return str(e), False
         
-    return "কোথাও কোনো সঠিক API Key খুঁজে পাওয়া যায়নি!", False
+    return "সঠিক কোনো API Key খুঁজে পাওয়া যায়নি! অনুগ্রহ করে সাইডবারে কি টাইপ করুন।", False
 
 # =================================================================
-# ৩. মেইন ইউজার ইন্টারফেস (UI) ও মক টেস্ট লজিক
+# ৩. মেইন ইউজার ইন্টারফেস (UI) ও মক টেস্ট লজিক রেন্ডারিং
 # =================================================================
 st.title("🧠 DiscreteMind AI")
 st.markdown("Your advanced AI companion for smart reasoning and instant solutions.")
@@ -180,13 +180,13 @@ with st.form("ai_form"):
     submit_button = st.form_submit_button("Generate Response")
 
 # =================================================================
-# ৪. রেসপন্স এবং ড্যাশবোর্ড লজিক
+# ৪. রেসপন্স প্রসেসিং, ডেটা ফ্রেম এবং ড্যাশবোর্ড লজিক
 # =================================================================
 if submit_button:
     if not final_key:
         st.error("🔑 API Key পাওয়া যায়নি! দয়া করে সাইডবারে একটি সঠিক Key প্রদান করুন।")
     elif not user_prompt.strip():
-        st.warning("⚠️ দয়া করে বক্সে কিছু লিখুন।")
+        st.warning("⚠️ দয়া করে বক্সে আপনার প্রশ্ন বা রিকোয়েস্টটি লিখুন।")
     else:
         with st.spinner("Processing with AI..."):
             response_text, success = call_universal_ai(user_prompt, final_key, provider)
@@ -240,4 +240,5 @@ if submit_button:
                 st.plotly_chart(fig, use_container_width=True)
                 
             else:
+                # কোনো এরর আসলে সেটি কুৎসিত লাল এরর বক্সের বদলে স্ট্রিমলিটের মার্জিত নোটিফিকেশনে দেখাবে
                 st.error(response_text)
